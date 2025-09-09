@@ -36,19 +36,71 @@ imgui.end()
   Currently using the simple lua script to run imgui widgets.
 
 ```lua
-function draw()
-    imgui.begin_window("Lua UI") -- need to change the name to cimgui for easy read.
-    imgui.text("Hello from Lua!")
-    imgui.end_window()
+function draw()--testing
+    imgui.Begin("Lua UI") -- need to change the name to cimgui for easy read.
+    imgui.Text("Hello from Lua!")
+    imgui.End()
 end
 
-function cleanup()
+function cleanup()--not work on yet
     print("Lua cleanup called")
 end
 ```
 
 # Note:
 - this is place holder code still need to make sure it coded and tested.
+
+
+# Features:
+- [ ] 
+- [x] Begin
+- [x] End
+- [x] Text
+- [x] Textf
+- [x] SliderFloat
+- [x] Button
+- [x] CheckBox
+- [x] StyleColorsDark
+- [x] StyleColorsLight
+- [x] StyleColorsClassic
+- [x] GetVersion
+- [x] BeginMenuBar
+- [x] EndMenuBar
+- [x] BeginMainMenuBar
+- [x] EndMainMenuBar
+- [x] BeginMenu
+- [x] EndMenu
+- [x] MenuItem
+- [x] BeginTooltip
+- [x] EndTooltip
+- [x] SetTooltip
+- [ ] 
+- [ ] 
+- [ ] 
+- [ ] 
+
+# Flags:
+- imgui.WindowFlags.NoTitleBar
+- imgui.WindowFlags.NoResize
+- imgui.WindowFlags.NoMove
+- imgui.WindowFlags.NoScrollbar
+- imgui.WindowFlags.NoCollapse
+- imgui.WindowFlags.AlwaysAutoResize
+- imgui.WindowFlags.NoBackground
+- imgui.WindowFlags.NoSavedSettings
+- imgui.WindowFlags.NoMouseInputs
+- imgui.WindowFlags.MenuBar
+- imgui.WindowFlags.HorizontalScrollbar
+- imgui.WindowFlags.NoFocusOnAppearing
+- imgui.WindowFlags.NoBringToFrontOnFocus
+- imgui.WindowFlags.AlwaysVerticalScrollbar
+- imgui.WindowFlags.AlwaysHorizontalScrollbar
+- imgui.WindowFlags.NoNavInputs
+- imgui.WindowFlags.NoNavFocus
+- imgui.WindowFlags.NoDecoration
+- imgui.WindowFlags.NoInputs
+- imgui.WindowFlags.NoNav
+
 
 # Dev:
 
