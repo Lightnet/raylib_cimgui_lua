@@ -2,22 +2,36 @@
 
 # License: MIT
 
+# Status:
+- work in progress.
+- prototype code.
+
 # Packages:
 - raylib 5.5
-- cimgui 1.92.1
+- cimgui 1.92.1 ( imgui )
 - lua 5.4
-- OpenGL 3.3 ( raylib)
+- OpenGL 3.3 ( raylib and local OS if driver pacakge exist )
+- glfw ( raylib )
+- CMake
+
+# tools:
+- msys64
+- CMake
+
+  Current config for windows with msys64 for small compiler. For later use for cross platform OS for desktop tests.
 
 # Information:
-  This is sample project that use cimgui knowing as imgui to run with raylib but in abstraction low level by rlgl.h. Due to raylib.h can't be access to set up window and graphic.
+  This is sample project that use cimgui (c language programing) knowing as imgui (c++ language programing ) to run with raylib but in abstraction low level by rlgl.h. Due to raylib.h can't be access to set up window and graphic.
 
-  By using the CMake for easy compile and fetch content to get those repo download to build the application.
+  Using the cimgui since there devs convert from imgui for better c language programing.
+
+  By using the CMake for easy compile and fetch content to get those repo download to build the application. Reason is that there raylib have different type build compiler.
 
   Currently using the simple lua script to run imgui widgets.
 
 ```lua
 function draw()
-    imgui.begin_window("Lua UI")
+    imgui.begin_window("Lua UI") -- need to change the name to cimgui for easy read.
     imgui.text("Hello from Lua!")
     imgui.end_window()
 end
@@ -27,10 +41,13 @@ function cleanup()
 end
 ```
 
+# Note:
+- this is place holder code still need to make sure it coded and tested.
+
 # Links and Credits:
 - https://github.com/Lightnet/raylib_abstraction_cimgui
 - https://github.com/raysan5/raylib
 - https://github.com/cimgui/cimgui/blob/docking_inter/backend_test/example_glfw_opengl3/main.c
 - https://github.com/WEREMSOFT/c99-raylib-cimgui-template
 - https://github.com/alfredbaudisch/raylib-cimgui
-- 
+- Grok AI Agent on x.com

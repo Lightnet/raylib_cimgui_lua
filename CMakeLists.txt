@@ -43,7 +43,6 @@ add_library(custom_cimgui STATIC ${IMGUI_SOURCES})
 target_include_directories(custom_cimgui PUBLIC
     ${cimgui_SOURCE_DIR}                            # cimgui
     ${cimgui_SOURCE_DIR}/imgui                      # imgui
-    # ${glfw_SOURCE_DIR}/include
     ${raylib_SOURCE_DIR}/src/external/glfw/include  # glfw
 )
 
@@ -139,6 +138,7 @@ target_include_directories(${APP_NAME} PUBLIC
 )
 
 # Set compile definitions for the application
+# this will enable for cimgui windows and graphics defines
 target_compile_definitions(${APP_NAME} PRIVATE
     CIMGUI_DEFINE_ENUMS_AND_STRUCTS=1
     IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1

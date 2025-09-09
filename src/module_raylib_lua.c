@@ -95,48 +95,67 @@ static int lua_imgui_text(lua_State* L) {
 // Lua-C function to add formatted text
 static int lua_imgui_text_formatted(lua_State* L) {
     const char* fmt = luaL_checkstring(L, 1);
-    const char* args = luaL_checkstring(L, 2);
-    igText(fmt, args);
+    int n = lua_gettop(L);
+    if (n < 2) {
+        igText("%s", fmt);
+        return 0;
+    }
+    
+    // Get string.format
+    lua_getglobal(L, "string");
+    if (!lua_istable(L, -1)) {
+        lua_pop(L, 1);
+        igText("%s", fmt);
+        return 0;
+    }
+    lua_getfield(L, -1, "format");
+    lua_remove(L, -2);  // Remove string table
+    
+    if (!lua_isfunction(L, -1)) {
+        lua_pop(L, 1);
+        igText("%s", fmt);
+        return 0;
+    }
+    
+    // Push fmt as first arg
+    lua_pushstring(L, fmt);
+    
+    // Push all additional args (from 2 to n)
+    for (int i = 2; i <= n; ++i) {
+        lua_pushvalue(L, i);
+    }
+    
+    // Call string.format(fmt, args...)
+    if (lua_pcall(L, n, 1, 0) != LUA_OK) {
+        // Error in formatting, print and pop
+        const char* err = lua_tostring(L, -1);
+        printf("Text format error: %s\n", err);
+        lua_pop(L, 1);
+        // Fallback: use fmt as plain text
+        igText("%s", fmt);
+        return 0;
+    }
+    
+    const char* formatted = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    
+    igText("%s", formatted);
     return 0;
 }
 
 // Lua-C function for slider float
 static int lua_imgui_slider_float(lua_State* L) {
     const char* label = luaL_checkstring(L, 1);
-    float* v = (float*)luaL_checkudata(L, 2, "imgui.float");
-    if (!v) {
-        luaL_error(L, "Second argument must be a float userdata");
-        return 0;
-    }
-    
+    float v = (float)luaL_checknumber(L, 2);
     float min = luaL_checknumber(L, 3);
     float max = luaL_checknumber(L, 4);
     const char* format = luaL_optstring(L, 5, "%.3f");
     ImGuiSliderFlags flags = luaL_optinteger(L, 6, 0);
     
-    bool changed = igSliderFloat(label, v, min, max, format, flags);
+    bool changed = igSliderFloat(label, &v, min, max, format, flags);
+    lua_pushnumber(L, v);
     lua_pushboolean(L, changed);
-    return 1;
-}
-
-// Lua-C function to create float userdata
-static int lua_imgui_create_float(lua_State* L) {
-    float* f = (float*)lua_newuserdata(L, sizeof(float));
-    *f = luaL_checknumber(L, 1);
-    luaL_getmetatable(L, "imgui.float");
-    lua_setmetatable(L, -2);
-    return 1;
-}
-
-// Lua-C function to get float value
-static int lua_imgui_get_float(lua_State* L) {
-    float* f = (float*)luaL_checkudata(L, 1, "imgui.float");
-    if (!f) {
-        luaL_error(L, "Argument must be a float userdata");
-        return 0;
-    }
-    lua_pushnumber(L, *f);
-    return 1;
+    return 2;
 }
 
 // Lua-C function for button
@@ -159,34 +178,36 @@ static int lua_imgui_button(lua_State* L) {
 // Lua-C function for checkbox
 static int lua_imgui_checkbox(lua_State* L) {
     const char* label = luaL_checkstring(L, 1);
-    bool* v = (bool*)luaL_checkudata(L, 2, "imgui.bool");
-    if (!v) {
-        luaL_error(L, "Second argument must be a bool userdata");
-        return 0;
-    }
+    bool v = lua_toboolean(L, 2);
     
-    bool changed = igCheckbox(label, v);
+    bool changed = igCheckbox(label, &v);
+    lua_pushboolean(L, v);
     lua_pushboolean(L, changed);
-    return 1;
+    return 2;
 }
 
-// Lua-C function to create bool userdata
-static int lua_imgui_create_bool(lua_State* L) {
-    bool* b = (bool*)lua_newuserdata(L, sizeof(bool));
-    *b = lua_toboolean(L, 1);
-    luaL_getmetatable(L, "imgui.bool");
-    lua_setmetatable(L, -2);
-    return 1;
+// Lua-C function to set dark style colors
+static int lua_imgui_style_colors_dark(lua_State* L) {
+    igStyleColorsDark(NULL);
+    return 0;
 }
 
-// Lua-C function to get bool value
-static int lua_imgui_get_bool(lua_State* L) {
-    bool* b = (bool*)luaL_checkudata(L, 1, "imgui.bool");
-    if (!b) {
-        luaL_error(L, "Argument must be a bool userdata");
-        return 0;
-    }
-    lua_pushboolean(L, *b);
+// Lua-C function to set light style colors
+static int lua_imgui_style_colors_light(lua_State* L) {
+    igStyleColorsLight(NULL);
+    return 0;
+}
+
+// Lua-C function to set classic style colors
+static int lua_imgui_style_colors_classic(lua_State* L) {
+    igStyleColorsClassic(NULL);
+    return 0;
+}
+
+// Lua-C function to get ImGui version
+static int lua_imgui_get_version(lua_State* L) {
+    const char* version = igGetVersion();
+    lua_pushstring(L, version);
     return 1;
 }
 
@@ -214,18 +235,6 @@ static int lua_load_script(lua_State* L) {
     return 2;
 }
 
-// Metatable for float userdata
-static const luaL_Reg float_meta[] = {
-    {"__tostring", lua_imgui_get_float},
-    {NULL, NULL}
-};
-
-// Metatable for bool userdata
-static const luaL_Reg bool_meta[] = {
-    {"__tostring", lua_imgui_get_bool},
-    {NULL, NULL}
-};
-
 // Lua module registration
 static const luaL_Reg imgui_functions[] = {
     {"cleanup", lua_imgui_cleanup},
@@ -236,22 +245,15 @@ static const luaL_Reg imgui_functions[] = {
     {"slider_float", lua_imgui_slider_float},
     {"button", lua_imgui_button},
     {"checkbox", lua_imgui_checkbox},
-    {"create_float", lua_imgui_create_float},
-    {"create_bool", lua_imgui_create_bool},
+    {"style_colors_dark", lua_imgui_style_colors_dark},
+    {"style_colors_light", lua_imgui_style_colors_light},
+    {"style_colors_classic", lua_imgui_style_colors_classic},
+    {"get_version", lua_imgui_get_version},
     {"load_script", lua_load_script},
     {NULL, NULL}
 };
 
 int luaopen_imgui(lua_State* L) {
-    // Create metatables
-    luaL_newmetatable(L, "imgui.float");
-    luaL_setfuncs(L, float_meta, 0);
-    lua_pop(L, 1);
-    
-    luaL_newmetatable(L, "imgui.bool");
-    luaL_setfuncs(L, bool_meta, 0);
-    lua_pop(L, 1);
-    
     // Create imgui table
     luaL_newlib(L, imgui_functions);
     return 1;

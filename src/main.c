@@ -184,6 +184,18 @@ int main(int argc, char** argv) {
     Vector3 cubePosition = { 0.0f, 0.0f, 0.0f };        // Cube at center
     float rotation = 0.0f;  // For animation (updated by slider or auto)
 
+    // Setup ImGui
+    // need to setup here for lua init setup else it crashed.
+    igCreateContext(NULL);
+    ImGuiIO *ioptr = igGetIO();
+    ioptr->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    ImGuiStyle* style = igGetStyle();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+    igStyleColorsDark(NULL);
+
+    // create lua module
     // Check for Lua script
     const char* lua_script = "script.lua";  // Default
     if (argc > 1) {
@@ -206,15 +218,7 @@ int main(int argc, char** argv) {
         printf("Lua script '%s' does not exist, using default UI\n", lua_script);
     }
 
-    // Setup ImGui
-    igCreateContext(NULL);
-    ImGuiIO *ioptr = igGetIO();
-    ioptr->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    ImGuiStyle* style = igGetStyle();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
-    igStyleColorsDark(NULL);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
