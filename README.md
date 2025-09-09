@@ -20,6 +20,12 @@
 
   Current config for windows with msys64 for small compiler. For later use for cross platform OS for desktop tests.
 
+# Important Notes:
+```
+imgui.end()
+```
+  This does not work due to match end for if statement conflict due how table works. To follow imgui format for easy to read and port to c/c++ to be use later.
+
 # Information:
   This is sample project that use cimgui (c language programing) knowing as imgui (c++ language programing ) to run with raylib but in abstraction low level by rlgl.h. Due to raylib.h can't be access to set up window and graphic.
 
@@ -43,6 +49,36 @@ end
 
 # Note:
 - this is place holder code still need to make sure it coded and tested.
+
+# Dev:
+
+main.c
+```
+setup window
+setup graphic
+setup cimgui
+setup lua
+
+loop
+  input
+  graphic start
+  imgui start frame
+  imgui render ui stuff
+  imgui end frame
+
+  camera
+  render mesh
+
+  rlDrawRenderBatchActive();
+  glUseProgram(0);
+  imgui render draw data
+  glfwSwapBuffers(window); 
+clean up
+```
+  There are four stage for imgui to handle imgui start, render ui, imgui end and imgui draw graphic. Well there is input to count as well. It all process under the hood.
+
+  Lua is added after imgui reason that script need to setup theme style else it would crashed.
+
 
 # Links and Credits:
 - https://github.com/Lightnet/raylib_abstraction_cimgui

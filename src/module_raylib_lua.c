@@ -44,7 +44,7 @@ static int lua_imgui_cleanup(lua_State* L) {
 }
 
 // Lua-C function to create a window
-static int lua_imgui_begin_window(lua_State* L) {
+static int lua_imgui_begin(lua_State* L) {
     const char* title = luaL_checkstring(L, 1);
     
     bool* p_open = NULL;
@@ -65,7 +65,54 @@ static int lua_imgui_begin_window(lua_State* L) {
         }
     }
     
-    ImGuiWindowFlags flags = luaL_optinteger(L, 3, 0);
+    // Handle flags (third argument): int or table of strings/names
+    ImGuiWindowFlags flags = 0;
+    if (lua_gettop(L) >= 3 && !lua_isnoneornil(L, 3)) {
+        if (lua_isnumber(L, 3)) {
+            flags = (ImGuiWindowFlags)lua_tointeger(L, 3);
+        } else if (lua_istable(L, 3)) {
+            // Iterate over table and sum flag values by name
+            lua_pushnil(L);  // First key
+            while (lua_next(L, 3) != 0) {
+                // Value at -1, key at -2
+                if (lua_isstring(L, -1)) {
+                    const char* flag_name = lua_tostring(L, -1);
+                    // Map name to value (add more mappings here for future flags)
+                    static const struct {
+                        const char* name;
+                        ImGuiWindowFlags value;
+                    } flag_map[] = {
+                        {"WindowFlags_NoTitleBar", ImGuiWindowFlags_NoTitleBar},
+                        {"WindowFlags_NoResize", ImGuiWindowFlags_NoResize},
+                        {"WindowFlags_NoMove", ImGuiWindowFlags_NoMove},
+                        {"WindowFlags_NoScrollbar", ImGuiWindowFlags_NoScrollbar},
+                        {"WindowFlags_NoCollapse", ImGuiWindowFlags_NoCollapse},
+                        {"WindowFlags_AlwaysAutoResize", ImGuiWindowFlags_AlwaysAutoResize},
+                        {"WindowFlags_NoBackground", ImGuiWindowFlags_NoBackground},
+                        {"WindowFlags_NoSavedSettings", ImGuiWindowFlags_NoSavedSettings},
+                        {"WindowFlags_NoMouseInputs", ImGuiWindowFlags_NoMouseInputs},
+                        {"WindowFlags_MenuBar", ImGuiWindowFlags_MenuBar},
+                        {"WindowFlags_HorizontalScrollbar", ImGuiWindowFlags_HorizontalScrollbar},
+                        {"WindowFlags_NoFocusOnAppearing", ImGuiWindowFlags_NoFocusOnAppearing},
+                        {"WindowFlags_NoBringToFrontOnFocus", ImGuiWindowFlags_NoBringToFrontOnFocus},
+                        {"WindowFlags_AlwaysVerticalScrollbar", ImGuiWindowFlags_AlwaysVerticalScrollbar},
+                        {"WindowFlags_AlwaysHorizontalScrollbar", ImGuiWindowFlags_AlwaysHorizontalScrollbar},
+                        // {"WindowFlags_AlwaysUseWindowPadding", ImGuiWindowFlags_AlwaysUseWindowPadding},
+                        {"WindowFlags_NoNavInputs", ImGuiWindowFlags_NoNavInputs},
+                        {"WindowFlags_NoNavFocus", ImGuiWindowFlags_NoNavFocus},
+                        {NULL, 0}
+                    };
+                    for (int i = 0; flag_map[i].name != NULL; ++i) {
+                        if (strcmp(flag_name, flag_map[i].name) == 0) {
+                            flags |= flag_map[i].value;
+                            break;
+                        }
+                    }
+                }
+                lua_pop(L, 1);  // Pop value, keep key for next iteration
+            }
+        }
+    }
     
     bool result = igBegin(title, p_open ? &open : NULL, flags);
     
@@ -78,8 +125,9 @@ static int lua_imgui_begin_window(lua_State* L) {
     return 1;
 }
 
+// window end
 // Lua-C function to end window
-static int lua_imgui_end_window(lua_State* L) {
+static int lua_imgui_end(lua_State* L) {
     igEnd();
     lua_pushboolean(L, 1);
     return 1;
@@ -211,6 +259,138 @@ static int lua_imgui_get_version(lua_State* L) {
     return 1;
 }
 
+// Lua-C function for menu bar
+static int lua_imgui_begin_menu(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    
+    bool enabled = true;  // Default
+    if (lua_gettop(L) >= 2 && !lua_isnoneornil(L, 2)) {
+        enabled = lua_toboolean(L, 2) != 0;
+    }
+    
+    bool result = igBeginMenu(label, enabled);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+//===============================================
+// 
+//===============================================
+
+// Lua-C function for menu bar
+static int lua_imgui_begin_menu_bar(lua_State* L) {
+    bool result = igBeginMenuBar();
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Lua-C function to end menu bar
+static int lua_imgui_end_menu_bar(lua_State* L) {
+    igEndMenuBar();
+    return 0;
+}
+
+// Lua-C function for main menu bar
+static int lua_imgui_begin_main_menu_bar(lua_State* L) {
+    bool result = igBeginMainMenuBar();
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Lua-C function to end main menu bar
+static int lua_imgui_end_main_menu_bar(lua_State* L) {
+    igEndMainMenuBar();
+    return 0;
+}
+
+// Lua-C function to end menu
+static int lua_imgui_end_menu(lua_State* L) {
+    igEndMenu();
+    return 0;
+}
+
+
+
+// Lua-C function for menu item
+static int lua_imgui_menu_item(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    const char* shortcut = luaL_optstring(L, 2, NULL);
+    
+    bool selected = false;  // Default
+    if (lua_gettop(L) >= 3 && !lua_isnoneornil(L, 3)) {
+        selected = lua_toboolean(L, 3) != 0;
+    }
+    
+    bool enabled = true;  // Default
+    if (lua_gettop(L) >= 4 && !lua_isnoneornil(L, 4)) {
+        enabled = lua_toboolean(L, 4) != 0;
+    }
+    
+    bool activated = igMenuItem_Bool(label, shortcut, selected, enabled);
+    lua_pushboolean(L, activated);
+    return 1;
+}
+
+// Lua-C function to begin tooltip
+static int lua_imgui_begin_tooltip(lua_State* L) {
+    igBeginTooltip();
+    return 0;
+}
+
+// Lua-C function to end tooltip
+static int lua_imgui_end_tooltip(lua_State* L) {
+    igEndTooltip();
+    return 0;
+}
+
+// Lua-C function to set tooltip
+static int lua_imgui_set_tooltip(lua_State* L) {
+    const char* fmt = luaL_checkstring(L, 1);
+    int n = lua_gettop(L);
+    
+    if (n == 1) {
+        igSetTooltip("%s", fmt);
+        return 0;
+    }
+    
+    // Get string.format
+    lua_getglobal(L, "string");
+    if (!lua_istable(L, -1)) {
+        lua_pop(L, 1);
+        igSetTooltip("%s", fmt);
+        return 0;
+    }
+    lua_getfield(L, -1, "format");
+    lua_remove(L, -2);
+    
+    if (!lua_isfunction(L, -1)) {
+        lua_pop(L, 1);
+        igSetTooltip("%s", fmt);
+        return 0;
+    }
+    
+    lua_pushstring(L, fmt);
+    for (int i = 2; i <= n; ++i) {
+        lua_pushvalue(L, i);
+    }
+    
+    if (lua_pcall(L, n, 1, 0) != LUA_OK) {
+        const char* err = lua_tostring(L, -1);
+        printf("Tooltip format error: %s\n", err);
+        lua_pop(L, 1);
+        igSetTooltip("%s", fmt);
+        return 0;
+    }
+    
+    const char* formatted = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    
+    igSetTooltip("%s", formatted);
+    return 0;
+}
+
+
+
 // Lua-C function to load and execute Lua script
 static int lua_load_script(lua_State* L) {
     const char* filename = luaL_checkstring(L, 1);
@@ -238,8 +418,8 @@ static int lua_load_script(lua_State* L) {
 // Lua module registration
 static const luaL_Reg imgui_functions[] = {
     {"cleanup", lua_imgui_cleanup},
-    {"begin_window", lua_imgui_begin_window},
-    {"end_window", lua_imgui_end_window},
+    {"begin", lua_imgui_begin},
+    {"End", lua_imgui_end},
     {"text", lua_imgui_text},
     {"textf", lua_imgui_text_formatted},
     {"slider_float", lua_imgui_slider_float},
@@ -249,6 +429,16 @@ static const luaL_Reg imgui_functions[] = {
     {"style_colors_light", lua_imgui_style_colors_light},
     {"style_colors_classic", lua_imgui_style_colors_classic},
     {"get_version", lua_imgui_get_version},
+    {"begin_menu_bar", lua_imgui_begin_menu_bar},
+    {"end_menu_bar", lua_imgui_end_menu_bar},
+    {"begin_main_menu_bar", lua_imgui_begin_main_menu_bar},
+    {"end_main_menu_bar", lua_imgui_end_main_menu_bar},
+    {"begin_menu", lua_imgui_begin_menu},
+    {"end_menu", lua_imgui_end_menu},
+    {"menu_item", lua_imgui_menu_item},
+    {"begin_tooltip", lua_imgui_begin_tooltip},
+    {"end_tooltip", lua_imgui_end_tooltip},
+    {"set_tooltip", lua_imgui_set_tooltip},
     {"load_script", lua_load_script},
     {NULL, NULL}
 };
@@ -256,8 +446,54 @@ static const luaL_Reg imgui_functions[] = {
 int luaopen_imgui(lua_State* L) {
     // Create imgui table
     luaL_newlib(L, imgui_functions);
+    
+    // Create WindowFlags sub-table
+    lua_newtable(L);
+    
+    // Map common window flags as strings (matching flag_map in lua_imgui_begin)
+    // Add more as needed for future flags
+    struct {
+        const char* full_name;   // Full string for lookup (value pushed)
+        const char* lua_field;   // Clean field name for Lua access (key set)
+        ImGuiWindowFlags value;  // Not used here, but for reference
+    } flag_map[] = {
+        {"WindowFlags_NoTitleBar", "NoTitleBar", ImGuiWindowFlags_NoTitleBar},
+        {"WindowFlags_NoResize", "NoResize", ImGuiWindowFlags_NoResize},
+        {"WindowFlags_NoMove", "NoMove", ImGuiWindowFlags_NoMove},
+        {"WindowFlags_NoScrollbar", "NoScrollbar", ImGuiWindowFlags_NoScrollbar},
+        {"WindowFlags_NoCollapse", "NoCollapse", ImGuiWindowFlags_NoCollapse},
+        {"WindowFlags_AlwaysAutoResize", "AlwaysAutoResize", ImGuiWindowFlags_AlwaysAutoResize},
+        {"WindowFlags_NoBackground", "NoBackground", ImGuiWindowFlags_NoBackground},
+        {"WindowFlags_NoSavedSettings", "NoSavedSettings", ImGuiWindowFlags_NoSavedSettings},
+        {"WindowFlags_NoMouseInputs", "NoMouseInputs", ImGuiWindowFlags_NoMouseInputs},
+        {"WindowFlags_MenuBar", "MenuBar", ImGuiWindowFlags_MenuBar},  // 1024
+        {"WindowFlags_HorizontalScrollbar", "HorizontalScrollbar", ImGuiWindowFlags_HorizontalScrollbar},
+        {"WindowFlags_NoFocusOnAppearing", "NoFocusOnAppearing", ImGuiWindowFlags_NoFocusOnAppearing},
+        {"WindowFlags_NoBringToFrontOnFocus", "NoBringToFrontOnFocus", ImGuiWindowFlags_NoBringToFrontOnFocus},
+        {"WindowFlags_AlwaysVerticalScrollbar", "AlwaysVerticalScrollbar", ImGuiWindowFlags_AlwaysVerticalScrollbar},
+        {"WindowFlags_AlwaysHorizontalScrollbar", "AlwaysHorizontalScrollbar", ImGuiWindowFlags_AlwaysHorizontalScrollbar},
+        // {"WindowFlags_AlwaysUseWindowPadding", "AlwaysUseWindowPadding", ImGuiWindowFlags_AlwaysUseWindowPadding},  // 262144
+        {"WindowFlags_NoNavInputs", "NoNavInputs", ImGuiWindowFlags_NoNavInputs},  // 65536
+        {"WindowFlags_NoNavFocus", "NoNavFocus", ImGuiWindowFlags_NoNavFocus},     // 131072
+        {"WindowFlags_NoDecoration", "NoDecoration", ImGuiWindowFlags_NoDecoration},
+        {"WindowFlags_NoInputs", "NoInputs", ImGuiWindowFlags_NoInputs},
+        {"WindowFlags_NoNav", "NoNav", ImGuiWindowFlags_NoNav},
+        {NULL, NULL, 0}
+    };
+    
+    for (int i = 0; flag_map[i].full_name != NULL; ++i) {
+        lua_pushstring(L, flag_map[i].full_name);  // Push the full lookup string as value
+        lua_setfield(L, -2, flag_map[i].lua_field);  // Set field with clean Lua name (e.g., "MenuBar")
+    }
+    
+    // Set WindowFlags as a field in the main imgui table
+    lua_setfield(L, -2, "WindowFlags");
+    
     return 1;
 }
+
+
+
 
 // Implementations for header-declared functions (stubs/no-ops since handled in main.c)
 void rl_lua_imgui_init(void) {

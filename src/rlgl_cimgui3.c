@@ -1,10 +1,6 @@
 //===============================================
-// raylib, cimgui, lua sample build.
+// Base simple setup test for raylib and cimgui.
 //===============================================
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
-
 #include "cimgui.h"
 #include "cimgui_impl.h"
 
@@ -14,7 +10,6 @@
 #include "raymath.h"
 
 #include <GLFW/glfw3.h>
-#include "module_raylib_lua.h"  // You'll need to create this header
 
 #include <stdio.h>              // Required for: printf()
 #include <math.h>               // For fmodf
@@ -24,8 +19,6 @@
 #define RED        (Color){ 230, 41, 55, 255 }     // Red
 #define RAYWHITE   (Color){ 245, 245, 245, 255 }   // My own White (raylib logo)
 #define DARKGRAY   (Color){ 80, 80, 80, 255 }      // Dark Gray
-
-lua_State* g_lua_state;  // Declare global
 
 // Color, 4 components, R8G8B8A8 (32bit)
 typedef struct Color {
@@ -126,10 +119,7 @@ static void DrawCube(Vector3 position) {
     rlEnd();
 }
 
-// Forward declaration for file_exists (add this line before main())
-static int file_exists(const char* filename);
-
-int main(int argc, char** argv) {
+int main() {
     int screenWidth = 800;
     int screenHeight = 450;
     const char *glsl_version = "#version 130";
@@ -185,126 +175,92 @@ int main(int argc, char** argv) {
     float rotation = 0.0f;  // For animation (updated by slider or auto)
 
     // Setup ImGui
-    // need to setup here for lua init setup else it crashed.
     igCreateContext(NULL);
     ImGuiIO *ioptr = igGetIO();
     ioptr->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
     ImGuiStyle* style = igGetStyle();
+    // Optional: float main_scale = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor());
+    // ImGuiStyle_ScaleAllSizes(style, main_scale);
+
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
     igStyleColorsDark(NULL);
 
-    // create lua module
-    // Check for Lua script
-    const char* lua_script = "script.lua";  // Default
-    if (argc > 1) {
-        lua_script = argv[1];  // Use first arg as script file
-        printf("Using Lua script from arg: %s\n", lua_script);
-    } else {
-        printf("No script arg provided, using default: %s\n", lua_script);
-    }
-    bool use_lua = false;
-    
-    if (file_exists(lua_script)) {
-        printf("Found Lua script: %s\n", lua_script);
-        use_lua = rl_lua_load_script(lua_script);
-        if (use_lua) {
-            printf("Lua script loaded successfully\n");
-        } else {
-            printf("Failed to load Lua script '%s', falling back to default UI\n", lua_script);
-        }
-    } else {
-        printf("Lua script '%s' does not exist, using default UI\n", lua_script);
-    }
-
-
-
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         float time = (float)glfwGetTime();
-        
-        // Auto-rotate cube
-        if (!use_lua || igIsItemActive() == false) {
-            rotation = fmodf(time * 30.0f, 360.0f);
+        // Auto-rotate if not actively using slider (simple fallback; slider overrides)
+        if (igIsItemActive() == false) {  // Check if slider is not being dragged
+            rotation = fmodf(time * 30.0f, 360.0f);  // 30 degrees per second
         }
 
         glfwPollEvents();
+
+        // Get current size (for dynamic support)
         glfwGetFramebufferSize(window, &screenWidth, &screenHeight);
+
+        // Clear early (color + depth for 3D)
         rlClearScreenBuffers();
 
         // ImGui frame start
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
-        
-        if (use_lua) {
-            // For Lua: Call new_frame if implemented, then draw
-            rl_lua_imgui_new_frame();  // Optional: For Lua-specific frame setup
-            igNewFrame();
-            rl_lua_call_draw();  // Call script's draw()
-            igRender();
-        } else {
-            // Default UI
-            igNewFrame();
-            igBegin("Hello, world!", NULL, 0);
-            igText("This is some useful text.");
-            igText("3D Cube should now rotate below!");
-            igText("Current Rotation: %.1f degrees", rotation);
-            if (igSliderFloat("Cube Y Rotation", &rotation, 0.0f, 360.0f, "%.0f degrees", 0)) {
-                // Slider changed
-            }
-            igEnd();
-            igRender();
-        }
+        igNewFrame();
 
-        // 3D Rendering (unchanged)
+        // Build ImGui UI
+        igBegin("Hello, world!", NULL, 0);
+        igText("This is some useful text.");
+        igText("3D Cube should now rotate below!");
+        igText("Current Rotation: %.1f degrees", rotation);
+        if (igSliderFloat("Cube Y Rotation", &rotation, 0.0f, 360.0f, "%.0f degrees", 0)) {
+            // Slider changed - rotation updates immediately
+        }
+        igEnd();
+
+        // 3D Rendering Setup
         float aspect = (float)screenWidth / (float)screenHeight;
-        Matrix proj = MatrixPerspective(camera.fovy * DEG2RAD, aspect, 0.1f, 1000.0f);
+        Matrix proj = MatrixPerspective(camera.fovy * DEG2RAD, aspect, 0.1f, 1000.0f);  // Perspective projection
         rlSetMatrixProjection(proj);
 
+        // Compute view matrix from camera
         Matrix view = MatrixLookAt(camera.position, camera.target, camera.up);
-        Matrix rot = MatrixRotateY(rotation * DEG2RAD);
+
+        // Compute model matrix: rotation * translation
+        Matrix rot = MatrixRotateY(rotation * DEG2RAD);  // Rotate around Y
         Matrix trans = MatrixTranslate(cubePosition.x, cubePosition.y, cubePosition.z);
         Matrix model = MatrixMultiply(rot, trans);
+
+        // Full model-view matrix (apply model to view)
         Matrix modelView = MatrixMultiply(model, view);
+
+        // Set the full model-view directly (bypass stack)
         rlSetMatrixModelview(modelView);
 
-        DrawCube((Vector3){0.0f, 0.0f, 0.0f});
-        rlDrawRenderBatchActive();
+        // Draw the cube (no push/pop or mult needed)
+        DrawCube((Vector3){0.0f, 0.0f, 0.0f});  // At local origin, with model applied above
+
+        rlDrawRenderBatchActive();  // Flush the batch
+
+        // End ImGui frame (record lists)
+        igRender();
 
         // Reset state for ImGui
         glUseProgram(0);
+
+        // Render ImGui (on top, 2D)
         ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
+
         glfwSwapBuffers(window);
     }
 
     // Cleanup
-    if (use_lua && g_lua_state) {
-        lua_getglobal(g_lua_state, "cleanup");
-        if (lua_isfunction(g_lua_state, -1)) {
-            lua_pcall(g_lua_state, 0, 0, 0);
-        }
-        lua_close(g_lua_state);
-        g_lua_state = NULL;
-    } else {
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        igDestroyContext(NULL);
-    }
-    
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    igDestroyContext(NULL);
     rlglClose();
     glfwDestroyWindow(window);
     glfwTerminate();
-    return 0;
-}
-
-// Add the file_exists function from module_raylib_lua.c to main file or include the header
-static int file_exists(const char* filename) {
-    FILE* file = fopen(filename, "r");
-    if (file) {
-        fclose(file);
-        return 1;
-    }
     return 0;
 }
 
