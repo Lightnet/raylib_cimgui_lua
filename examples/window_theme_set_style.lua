@@ -1,20 +1,22 @@
+
+
 function draw()
-    imgui.begin_window("Lua UI")
-    imgui.text("Hello from Lua!")
-    if imgui.button("dark") then
-        imgui.style_colors_dark()
+    imgui.Begin("Lua UI")
+    imgui.Text("Hello from Lua!")
+    if imgui.Button("dark") then
+        imgui.StyleColorsDark()
     end
-    if imgui.button("light") then
-        imgui.style_colors_light()
+    if imgui.Button("light") then
+        imgui.StyleColorsLight()
     end
-    if imgui.button("classic") then
-        imgui.style_colors_classic()
+    if imgui.Button("classic") then
+        imgui.StyleColorsClassic()
     end
 
-    if imgui.button("imgui version") then
-        print(imgui.get_version())
+    if imgui.Button("imgui version") then
+        print(imgui.GetVersion())
     end
-    imgui.end_window()
+    imgui.End()
 end
 
 function cleanup()

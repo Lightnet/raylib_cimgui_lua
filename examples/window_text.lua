@@ -1,9 +1,9 @@
 --window text 
 
 function draw()
-    imgui.begin_window("Lua UI")
-    imgui.text("Hello from Lua!")
-    imgui.end_window()
+    imgui.Begin("Lua UI")
+    imgui.Text("Hello from Lua!")
+    imgui.End()
 end
 
 function cleanup()

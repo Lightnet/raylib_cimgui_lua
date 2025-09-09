@@ -1,9 +1,10 @@
---window simple 
+-- window
 
 function draw()
-    imgui.begin_window("Lua UI")
-    imgui.text("Hello from Lua!")
-    imgui.end_window()
+    if imgui.Begin("Lua ImGui Demo") then
+        imgui.Text("Hello from Lua!")
+    end
+    imgui.End()
 end
 
 function cleanup()

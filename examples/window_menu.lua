@@ -1,17 +1,19 @@
+
+
 function draw()
-    imgui.begin_main_menu_bar()
-    if imgui.begin_menu("File", true) then
-        if imgui.menu_item("Open", "Ctrl+O") then
+    imgui.BeginMainMenuBar()
+    if imgui.BeginMenu("File", true) then
+        if imgui.MenuItem("Open", "Ctrl+O") then
             -- Handle open
         end
-        imgui.set_tooltip("Open a file")
-        imgui.end_menu()
+        imgui.SetTooltip("Open a file")
+        imgui.EndMenu()
     end
-    imgui.end_main_menu_bar()
+    imgui.EndMainMenuBar()
 
-    imgui.begin("Lua UI")
+    imgui.Begin("Lua UI")
 
-    imgui.text("Hello from Lua!")
+    imgui.Text("Hello from Lua!")
     imgui.End()
 end
 

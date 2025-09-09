@@ -97,7 +97,6 @@ static int lua_imgui_begin(lua_State* L) {
                         {"WindowFlags_NoBringToFrontOnFocus", ImGuiWindowFlags_NoBringToFrontOnFocus},
                         {"WindowFlags_AlwaysVerticalScrollbar", ImGuiWindowFlags_AlwaysVerticalScrollbar},
                         {"WindowFlags_AlwaysHorizontalScrollbar", ImGuiWindowFlags_AlwaysHorizontalScrollbar},
-                        // {"WindowFlags_AlwaysUseWindowPadding", ImGuiWindowFlags_AlwaysUseWindowPadding},
                         {"WindowFlags_NoNavInputs", ImGuiWindowFlags_NoNavInputs},
                         {"WindowFlags_NoNavFocus", ImGuiWindowFlags_NoNavFocus},
                         {NULL, 0}
@@ -274,7 +273,7 @@ static int lua_imgui_begin_menu(lua_State* L) {
 }
 
 //===============================================
-// 
+// MENU
 //===============================================
 
 // Lua-C function for menu bar
@@ -308,8 +307,6 @@ static int lua_imgui_end_menu(lua_State* L) {
     igEndMenu();
     return 0;
 }
-
-
 
 // Lua-C function for menu item
 static int lua_imgui_menu_item(lua_State* L) {
@@ -389,8 +386,6 @@ static int lua_imgui_set_tooltip(lua_State* L) {
     return 0;
 }
 
-
-
 // Lua-C function to load and execute Lua script
 static int lua_load_script(lua_State* L) {
     const char* filename = luaL_checkstring(L, 1);
@@ -417,29 +412,32 @@ static int lua_load_script(lua_State* L) {
 
 // Lua module registration
 static const luaL_Reg imgui_functions[] = {
+    // test
     {"cleanup", lua_imgui_cleanup},
-    {"begin", lua_imgui_begin},
-    {"End", lua_imgui_end},
-    {"text", lua_imgui_text},
-    {"textf", lua_imgui_text_formatted},
-    {"slider_float", lua_imgui_slider_float},
-    {"button", lua_imgui_button},
-    {"checkbox", lua_imgui_checkbox},
-    {"style_colors_dark", lua_imgui_style_colors_dark},
-    {"style_colors_light", lua_imgui_style_colors_light},
-    {"style_colors_classic", lua_imgui_style_colors_classic},
-    {"get_version", lua_imgui_get_version},
-    {"begin_menu_bar", lua_imgui_begin_menu_bar},
-    {"end_menu_bar", lua_imgui_end_menu_bar},
-    {"begin_main_menu_bar", lua_imgui_begin_main_menu_bar},
-    {"end_main_menu_bar", lua_imgui_end_main_menu_bar},
-    {"begin_menu", lua_imgui_begin_menu},
-    {"end_menu", lua_imgui_end_menu},
-    {"menu_item", lua_imgui_menu_item},
-    {"begin_tooltip", lua_imgui_begin_tooltip},
-    {"end_tooltip", lua_imgui_end_tooltip},
-    {"set_tooltip", lua_imgui_set_tooltip},
     {"load_script", lua_load_script},
+    // imgui
+    {"Begin", lua_imgui_begin},
+    {"End", lua_imgui_end},
+    {"Text", lua_imgui_text},
+    {"Textf", lua_imgui_text_formatted},
+    {"SliderFloat", lua_imgui_slider_float},
+    {"Button", lua_imgui_button},
+    {"CheckBox", lua_imgui_checkbox},
+    {"StyleColorsDark", lua_imgui_style_colors_dark},
+    {"StyleColorsLight", lua_imgui_style_colors_light},
+    {"StyleColorsClassic", lua_imgui_style_colors_classic},
+    {"GetVersion", lua_imgui_get_version},
+    {"BeginMenuBar", lua_imgui_begin_menu_bar},
+    {"EndMenuBar", lua_imgui_end_menu_bar},
+    {"BeginMainMenuBar", lua_imgui_begin_main_menu_bar},
+    {"EndMainMenuBar", lua_imgui_end_main_menu_bar},
+    {"BeginMenu", lua_imgui_begin_menu},
+    {"EndMenu", lua_imgui_end_menu},
+    {"MenuItem", lua_imgui_menu_item},
+    {"BeginTooltip", lua_imgui_begin_tooltip},
+    {"EndTooltip", lua_imgui_end_tooltip},
+    {"SetTooltip", lua_imgui_set_tooltip},
+    
     {NULL, NULL}
 };
 
@@ -472,7 +470,6 @@ int luaopen_imgui(lua_State* L) {
         {"WindowFlags_NoBringToFrontOnFocus", "NoBringToFrontOnFocus", ImGuiWindowFlags_NoBringToFrontOnFocus},
         {"WindowFlags_AlwaysVerticalScrollbar", "AlwaysVerticalScrollbar", ImGuiWindowFlags_AlwaysVerticalScrollbar},
         {"WindowFlags_AlwaysHorizontalScrollbar", "AlwaysHorizontalScrollbar", ImGuiWindowFlags_AlwaysHorizontalScrollbar},
-        // {"WindowFlags_AlwaysUseWindowPadding", "AlwaysUseWindowPadding", ImGuiWindowFlags_AlwaysUseWindowPadding},  // 262144
         {"WindowFlags_NoNavInputs", "NoNavInputs", ImGuiWindowFlags_NoNavInputs},  // 65536
         {"WindowFlags_NoNavFocus", "NoNavFocus", ImGuiWindowFlags_NoNavFocus},     // 131072
         {"WindowFlags_NoDecoration", "NoDecoration", ImGuiWindowFlags_NoDecoration},
@@ -491,8 +488,6 @@ int luaopen_imgui(lua_State* L) {
     
     return 1;
 }
-
-
 
 
 // Implementations for header-declared functions (stubs/no-ops since handled in main.c)
