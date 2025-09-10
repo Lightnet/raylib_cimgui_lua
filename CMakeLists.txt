@@ -53,7 +53,7 @@ target_compile_definitions(custom_cimgui PUBLIC
 )
 
 # Link custom_cimgui with GLFW and OpenGL
-target_link_libraries(custom_cimgui PUBLIC glfw OpenGL::GL)
+target_link_libraries(custom_cimgui PUBLIC glfw OpenGL::GL) # needed library
 
 #================================================
 # Lua
@@ -118,16 +118,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(enet)
 
-
-
 #================================================
 # Application
 #================================================
 set(APP_NAME ril)
 set(SRC_FILES
-    src/module_cimgui.c
-    src/module_lua.c
-    src/module_enet.c
+    src/module_cimgui.c                             # cimgui
+    src/module_lua.c                                # lua
+    src/module_enet.c                               # enet
 )
 
 add_executable(${APP_NAME}
@@ -137,9 +135,9 @@ add_executable(${APP_NAME}
 
 # Link application with custom_cimgui
 target_link_libraries(${APP_NAME} PRIVATE 
-    raylib
-    custom_cimgui
-    lua
+    raylib                                          # raylib
+    custom_cimgui                                   # cimgui
+    lua                                             # lua
 )
 
 # Include directories for the application
@@ -156,11 +154,11 @@ target_include_directories(${APP_NAME} PUBLIC
 # Set compile definitions for the application
 # this will enable for cimgui windows and graphics defines
 target_compile_definitions(${APP_NAME} PRIVATE
-    CIMGUI_DEFINE_ENUMS_AND_STRUCTS=1
-    IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
-    CIMGUI_USE_GLFW=1
-    CIMGUI_USE_OPENGL3=1
-    ENET_IMPLEMENTATION=1
+    CIMGUI_DEFINE_ENUMS_AND_STRUCTS=1       # cimgui
+    IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1      # imgui
+    CIMGUI_USE_GLFW=1                       # cimgui glfw
+    CIMGUI_USE_OPENGL3=1                    # cimgui opengl 330
+    ENET_IMPLEMENTATION=1                   #enet
 )
 
 # Windows-specific settings

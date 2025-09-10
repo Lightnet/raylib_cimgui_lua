@@ -11,10 +11,6 @@
 #include "rlgl.h"
 #include "raymath.h"
 
-#define igGetIO igGetIO_Nil
-
-// extern lua_State* g_lua_state;  // Declare global
-
 // Global ImGui context pointer
 static ImGuiContext* g_imgui_context = NULL;
 static bool g_lua_initialized = false;
@@ -783,6 +779,571 @@ static int lua_imgui_set_tooltip(lua_State* L) {
 }
 
 
+// Lua-C function to set custom ImGui style colors
+static int lua_imgui_set_style_custom(lua_State* L) {
+    const char* col_name = luaL_checkstring(L, 1); // First argument: ImGuiCol_ name
+    luaL_checktype(L, 2, LUA_TTABLE); // Second argument: color array
+
+    ImGuiStyle* style = igGetStyle(); // Get the current ImGui style
+    if (!style) {
+        luaL_error(L, "Failed to get ImGui style");
+        return 0;
+    }
+
+    // Map of ImGuiCol_ names to enum values, matching luaopen_imgui Col sub-table
+    static const struct {
+        const char* name;
+        ImGuiCol value;
+    } col_map[] = {
+        {"Col_Text", ImGuiCol_Text},
+        {"Col_TextDisabled", ImGuiCol_TextDisabled},
+        {"Col_WindowBg", ImGuiCol_WindowBg},
+        {"Col_ChildBg", ImGuiCol_ChildBg},
+        {"Col_PopupBg", ImGuiCol_PopupBg},
+        {"Col_Border", ImGuiCol_Border},
+        {"Col_BorderShadow", ImGuiCol_BorderShadow},
+        {"Col_FrameBg", ImGuiCol_FrameBg},
+        {"Col_FrameBgHovered", ImGuiCol_FrameBgHovered},
+        {"Col_FrameBgActive", ImGuiCol_FrameBgActive},
+        {"Col_TitleBg", ImGuiCol_TitleBg},
+        {"Col_TitleBgActive", ImGuiCol_TitleBgActive},
+        {"Col_TitleBgCollapsed", ImGuiCol_TitleBgCollapsed},
+        {"Col_MenuBarBg", ImGuiCol_MenuBarBg},
+        {"Col_ScrollbarBg", ImGuiCol_ScrollbarBg},
+        {"Col_ScrollbarGrab", ImGuiCol_ScrollbarGrab},
+        {"Col_ScrollbarGrabHovered", ImGuiCol_ScrollbarGrabHovered},
+        {"Col_ScrollbarGrabActive", ImGuiCol_ScrollbarGrabActive},
+        {"Col_CheckMark", ImGuiCol_CheckMark},
+        {"Col_SliderGrab", ImGuiCol_SliderGrab},
+        {"Col_SliderGrabActive", ImGuiCol_SliderGrabActive},
+        {"Col_Button", ImGuiCol_Button},
+        {"Col_ButtonHovered", ImGuiCol_ButtonHovered},
+        {"Col_ButtonActive", ImGuiCol_ButtonActive},
+        {"Col_Header", ImGuiCol_Header},
+        {"Col_HeaderHovered", ImGuiCol_HeaderHovered},
+        {"Col_HeaderActive", ImGuiCol_HeaderActive},
+        {"Col_Separator", ImGuiCol_Separator},
+        {"Col_SeparatorHovered", ImGuiCol_SeparatorHovered},
+        {"Col_SeparatorActive", ImGuiCol_SeparatorActive},
+        {"Col_ResizeGrip", ImGuiCol_ResizeGrip},
+        {"Col_ResizeGripHovered", ImGuiCol_ResizeGripHovered},
+        {"Col_ResizeGripActive", ImGuiCol_ResizeGripActive},
+        {"Col_Tab", ImGuiCol_Tab},
+        {"Col_TabHovered", ImGuiCol_TabHovered},
+        // {"Col_TabActive", ImGuiCol_TabActive},
+        // {"Col_TabUnfocused", ImGuiCol_TabUnfocused},
+        // {"Col_TabUnfocusedActive", ImGuiCol_TabUnfocusedActive},
+        {"Col_PlotLines", ImGuiCol_PlotLines},
+        {"Col_PlotLinesHovered", ImGuiCol_PlotLinesHovered},
+        {"Col_PlotHistogram", ImGuiCol_PlotHistogram},
+        {"Col_PlotHistogramHovered", ImGuiCol_PlotHistogramHovered},
+        {"Col_TableHeaderBg", ImGuiCol_TableHeaderBg},
+        {"Col_TableBorderStrong", ImGuiCol_TableBorderStrong},
+        {"Col_TableBorderLight", ImGuiCol_TableBorderLight},
+        {"Col_TableRowBg", ImGuiCol_TableRowBg},
+        {"Col_TableRowBgAlt", ImGuiCol_TableRowBgAlt},
+        {"Col_TextSelectedBg", ImGuiCol_TextSelectedBg},
+        {"Col_DragDropTarget", ImGuiCol_DragDropTarget},
+        // {"Col_NavHighlight", ImGuiCol_NavHighlight},
+        {"Col_NavWindowingHighlight", ImGuiCol_NavWindowingHighlight},
+        {"Col_NavWindowingDimBg", ImGuiCol_NavWindowingDimBg},
+        {"Col_ModalWindowDimBg", ImGuiCol_ModalWindowDimBg},
+        {NULL, 0}
+    };
+
+    printf("SetStyleCustom: Processing color key: %s\n", col_name);
+    ImGuiCol col_idx = -1;
+    for (int i = 0; col_map[i].name != NULL; ++i) {
+        if (strcmp(col_name, col_map[i].name) == 0) {
+            col_idx = col_map[i].value;
+            break;
+        }
+    }
+
+    if (col_idx == -1) {
+        printf("SetStyleCustom: Error: Invalid ImGuiCol name '%s'\n", col_name);
+        luaL_error(L, "Invalid ImGuiCol name: %s", col_name);
+        return 0;
+    }
+
+    printf("SetStyleCustom: Value for %s is a table\n", col_name);
+    ImVec4 color = {0.0f, 0.0f, 0.0f, 1.0f}; // Default to opaque black
+    int len = lua_rawlen(L, 2);
+    printf("SetStyleCustom: Color array length for %s: %d\n", col_name, len);
+    if (len < 3 || len > 4) {
+        printf("SetStyleCustom: Error: Invalid color array length %d for %s\n", len, col_name);
+        luaL_error(L, "Color array for %s must have 3 or 4 components, got %d", col_name, len);
+        return 0;
+    }
+
+    lua_geti(L, 2, 1);
+    if (!lua_isnumber(L, -1)) {
+        printf("SetStyleCustom: Error: Element 1 for %s is not a number\n", col_name);
+        luaL_error(L, "Color element 1 for %s is not a number", col_name);
+        lua_pop(L, 1);
+        return 0;
+    }
+    color.x = (float)luaL_checknumber(L, -1);
+    lua_geti(L, 2, 2);
+    if (!lua_isnumber(L, -1)) {
+        printf("SetStyleCustom: Error: Element 2 for %s is not a number\n", col_name);
+        luaL_error(L, "Color element 2 for %s is not a number", col_name);
+        lua_pop(L, 2);
+        return 0;
+    }
+    color.y = (float)luaL_checknumber(L, -1);
+    lua_geti(L, 2, 3);
+    if (!lua_isnumber(L, -1)) {
+        printf("SetStyleCustom: Error: Element 3 for %s is not a number\n", col_name);
+        luaL_error(L, "Color element 3 for %s is not a number", col_name);
+        lua_pop(L, 3);
+        return 0;
+    }
+    color.z = (float)luaL_checknumber(L, -1);
+    if (len == 4) {
+        lua_geti(L, 2, 4);
+        if (!lua_isnumber(L, -1)) {
+            printf("SetStyleCustom: Error: Element 4 for %s is not a number\n", col_name);
+            luaL_error(L, "Color element 4 for %s is not a number", col_name);
+            lua_pop(L, 1);
+            lua_pop(L, 3);
+            return 0;
+        }
+        color.w = (float)luaL_checknumber(L, -1);
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 3);
+
+    // Validate color values
+    if (color.x < 0.0f || color.x > 1.0f || color.y < 0.0f || color.y > 1.0f ||
+        color.z < 0.0f || color.z > 1.0f || color.w < 0.0f || color.w > 1.0f) {
+        printf("SetStyleCustom: Error: Color values for %s out of range [0.0, 1.0]\n", col_name);
+        luaL_error(L, "Color values for %s out of range [0.0, 1.0]", col_name);
+        return 0;
+    }
+
+    style->Colors[col_idx] = color;
+    printf("SetStyleCustom: Set style color %s: R=%.2f, G=%.2f, B=%.2f, A=%.2f\n",
+           col_name, color.x, color.y, color.z, color.w);
+
+    return 0; // No return value
+}
+
+// does not work.
+// Lua-C function to set custom ImGui style colors in groups
+static int lua_imgui_set_style_customs(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE); // Expect a table mapping ImGuiCol_ names to color arrays
+
+    ImGuiStyle* style = igGetStyle(); // Get the current ImGui style
+    if (!style) {
+        luaL_error(L, "Failed to get ImGui style");
+        return 0;
+    }
+
+    // Map of ImGuiCol_ names to enum values, matching luaopen_imgui Col sub-table
+    static const struct {
+        const char* name;
+        ImGuiCol value;
+    } col_map[] = {
+        {"Col_Text", ImGuiCol_Text},
+        {"Col_TextDisabled", ImGuiCol_TextDisabled},
+        {"Col_WindowBg", ImGuiCol_WindowBg},
+        {"Col_ChildBg", ImGuiCol_ChildBg},
+        {"Col_PopupBg", ImGuiCol_PopupBg},
+        {"Col_Border", ImGuiCol_Border},
+        {"Col_BorderShadow", ImGuiCol_BorderShadow},
+        {"Col_FrameBg", ImGuiCol_FrameBg},
+        {"Col_FrameBgHovered", ImGuiCol_FrameBgHovered},
+        {"Col_FrameBgActive", ImGuiCol_FrameBgActive},
+        {"Col_TitleBg", ImGuiCol_TitleBg},
+        {"Col_TitleBgActive", ImGuiCol_TitleBgActive},
+        {"Col_TitleBgCollapsed", ImGuiCol_TitleBgCollapsed},
+        {"Col_MenuBarBg", ImGuiCol_MenuBarBg},
+        {"Col_ScrollbarBg", ImGuiCol_ScrollbarBg},
+        {"Col_ScrollbarGrab", ImGuiCol_ScrollbarGrab},
+        {"Col_ScrollbarGrabHovered", ImGuiCol_ScrollbarGrabHovered},
+        {"Col_ScrollbarGrabActive", ImGuiCol_ScrollbarGrabActive},
+        {"Col_CheckMark", ImGuiCol_CheckMark},
+        {"Col_SliderGrab", ImGuiCol_SliderGrab},
+        {"Col_SliderGrabActive", ImGuiCol_SliderGrabActive},
+        {"Col_Button", ImGuiCol_Button},
+        {"Col_ButtonHovered", ImGuiCol_ButtonHovered},
+        {"Col_ButtonActive", ImGuiCol_ButtonActive},
+        {"Col_Header", ImGuiCol_Header},
+        {"Col_HeaderHovered", ImGuiCol_HeaderHovered},
+        {"Col_HeaderActive", ImGuiCol_HeaderActive},
+        {"Col_Separator", ImGuiCol_Separator},
+        {"Col_SeparatorHovered", ImGuiCol_SeparatorHovered},
+        {"Col_SeparatorActive", ImGuiCol_SeparatorActive},
+        {"Col_ResizeGrip", ImGuiCol_ResizeGrip},
+        {"Col_ResizeGripHovered", ImGuiCol_ResizeGripHovered},
+        {"Col_ResizeGripActive", ImGuiCol_ResizeGripActive},
+        {"Col_Tab", ImGuiCol_Tab},
+        {"Col_TabHovered", ImGuiCol_TabHovered},
+        // {"Col_TabActive", ImGuiCol_TabActive},
+        // {"Col_TabUnfocused", ImGuiCol_TabUnfocused},
+        // {"Col_TabUnfocusedActive", ImGuiCol_TabUnfocusedActive},
+        {"Col_PlotLines", ImGuiCol_PlotLines},
+        {"Col_PlotLinesHovered", ImGuiCol_PlotLinesHovered},
+        {"Col_PlotHistogram", ImGuiCol_PlotHistogram},
+        {"Col_PlotHistogramHovered", ImGuiCol_PlotHistogramHovered},
+        {"Col_TableHeaderBg", ImGuiCol_TableHeaderBg},
+        {"Col_TableBorderStrong", ImGuiCol_TableBorderStrong},
+        {"Col_TableBorderLight", ImGuiCol_TableBorderLight},
+        {"Col_TableRowBg", ImGuiCol_TableRowBg},
+        {"Col_TableRowBgAlt", ImGuiCol_TableRowBgAlt},
+        {"Col_TextSelectedBg", ImGuiCol_TextSelectedBg},
+        {"Col_DragDropTarget", ImGuiCol_DragDropTarget},
+        // {"Col_NavHighlight", ImGuiCol_NavHighlight},
+        {"Col_NavWindowingHighlight", ImGuiCol_NavWindowingHighlight},
+        {"Col_NavWindowingDimBg", ImGuiCol_NavWindowingDimBg},
+        {"Col_ModalWindowDimBg", ImGuiCol_ModalWindowDimBg},
+        {NULL, 0}
+    };
+
+    // Iterate over the input table
+    lua_pushnil(L); // First key
+    while (lua_next(L, 1) != 0) {
+        if (!lua_isstring(L, -2)) {
+            printf("SetStyleCustoms: Error: Non-string key in table, got %s\n", luaL_typename(L, -2));
+            lua_pop(L, 1); // Pop value, keep key for next iteration
+            continue;
+        }
+
+        const char* col_name = lua_tostring(L, -2);
+        printf("SetStyleCustoms: Processing color key: %s\n", col_name);
+        ImGuiCol col_idx = -1;
+
+        // Find the ImGuiCol_ enum value
+        for (int i = 0; col_map[i].name != NULL; ++i) {
+            if (strcmp(col_name, col_map[i].name) == 0) {
+                col_idx = col_map[i].value;
+                break;
+            }
+        }
+
+        if (col_idx == -1) {
+            printf("SetStyleCustoms: Error: Invalid ImGuiCol name '%s'\n", col_name);
+            lua_pop(L, 1);
+            continue;
+        }
+
+        if (!lua_istable(L, -1)) {
+            printf("SetStyleCustoms: Error: Value for %s is not a table, got %s\n", col_name, luaL_typename(L, -1));
+            lua_pop(L, 1);
+            continue;
+        }
+
+        printf("SetStyleCustoms: Value for %s is a table\n", col_name);
+        ImVec4 color = {0.0f, 0.0f, 0.0f, 1.0f}; // Default to opaque black
+        int len = lua_rawlen(L, -1);
+        printf("SetStyleCustoms: Color array length for %s: %d\n", col_name, len);
+        if (len < 3 || len > 4) {
+            printf("SetStyleCustoms: Error: Invalid color array length %d for %s\n", len, col_name);
+            lua_pop(L, 1);
+            continue;
+        }
+
+        lua_geti(L, -1, 1);
+        if (!lua_isnumber(L, -1)) {
+            printf("SetStyleCustoms: Error: Element 1 for %s is not a number\n", col_name);
+            lua_pop(L, 1);
+            lua_pop(L, 1);
+            continue;
+        }
+        color.x = (float)luaL_checknumber(L, -1);
+        lua_geti(L, -1, 2);
+        if (!lua_isnumber(L, -1)) {
+            printf("SetStyleCustoms: Error: Element 2 for %s is not a number\n", col_name);
+            lua_pop(L, 2);
+            lua_pop(L, 1);
+            continue;
+        }
+        color.y = (float)luaL_checknumber(L, -1);
+        lua_geti(L, -1, 3);
+        if (!lua_isnumber(L, -1)) {
+            printf("SetStyleCustoms: Error: Element 3 for %s is not a number\n", col_name);
+            lua_pop(L, 3);
+            lua_pop(L, 1);
+            continue;
+        }
+        color.z = (float)luaL_checknumber(L, -1);
+        if (len == 4) {
+            lua_geti(L, -1, 4);
+            if (!lua_isnumber(L, -1)) {
+                printf("SetStyleCustoms: Error: Element 4 for %s is not a number\n", col_name);
+                lua_pop(L, 1);
+                lua_pop(L, 3);
+                lua_pop(L, 1);
+                continue;
+            }
+            color.w = (float)luaL_checknumber(L, -1);
+            lua_pop(L, 1);
+        }
+        lua_pop(L, 3);
+
+        // Validate color values
+        if (color.x < 0.0f || color.x > 1.0f || color.y < 0.0f || color.y > 1.0f ||
+            color.z < 0.0f || color.z > 1.0f || color.w < 0.0f || color.w > 1.0f) {
+            printf("SetStyleCustoms: Error: Color values for %s out of range [0.0, 1.0]\n", col_name);
+            lua_pop(L, 1);
+            continue;
+        }
+
+        style->Colors[col_idx] = color;
+        printf("SetStyleCustoms: Set style color %s: R=%.2f, G=%.2f, B=%.2f, A=%.2f\n",
+               col_name, color.x, color.y, color.z, color.w);
+
+        lua_pop(L, 1); // Pop value, keep key for next iteration
+    }
+
+    return 0; // No return value
+}
+
+
+// Lua-C function to get a custom ImGui style color
+static int lua_imgui_get_style_custom(lua_State* L) {
+    const char* col_name = luaL_checkstring(L, 1);
+
+    ImGuiStyle* style = igGetStyle();
+    if (!style) {
+        luaL_error(L, "Failed to get ImGui style");
+        return 0;
+    }
+
+    // Map of ImGuiCol_ names to enum values, matching luaopen_imgui Col sub-table
+    static const struct {
+        const char* name;
+        ImGuiCol value;
+    } col_map[] = {
+        {"Col_Text", ImGuiCol_Text},
+        {"Col_TextDisabled", ImGuiCol_TextDisabled},
+        {"Col_WindowBg", ImGuiCol_WindowBg},
+        {"Col_ChildBg", ImGuiCol_ChildBg},
+        {"Col_PopupBg", ImGuiCol_PopupBg},
+        {"Col_Border", ImGuiCol_Border},
+        {"Col_BorderShadow", ImGuiCol_BorderShadow},
+        {"Col_FrameBg", ImGuiCol_FrameBg},
+        {"Col_FrameBgHovered", ImGuiCol_FrameBgHovered},
+        {"Col_FrameBgActive", ImGuiCol_FrameBgActive},
+        {"Col_TitleBg", ImGuiCol_TitleBg},
+        {"Col_TitleBgActive", ImGuiCol_TitleBgActive},
+        {"Col_TitleBgCollapsed", ImGuiCol_TitleBgCollapsed},
+        {"Col_MenuBarBg", ImGuiCol_MenuBarBg},
+        {"Col_ScrollbarBg", ImGuiCol_ScrollbarBg},
+        {"Col_ScrollbarGrab", ImGuiCol_ScrollbarGrab},
+        {"Col_ScrollbarGrabHovered", ImGuiCol_ScrollbarGrabHovered},
+        {"Col_ScrollbarGrabActive", ImGuiCol_ScrollbarGrabActive},
+        {"Col_CheckMark", ImGuiCol_CheckMark},
+        {"Col_SliderGrab", ImGuiCol_SliderGrab},
+        {"Col_SliderGrabActive", ImGuiCol_SliderGrabActive},
+        {"Col_Button", ImGuiCol_Button},
+        {"Col_ButtonHovered", ImGuiCol_ButtonHovered},
+        {"Col_ButtonActive", ImGuiCol_ButtonActive},
+        {"Col_Header", ImGuiCol_Header},
+        {"Col_HeaderHovered", ImGuiCol_HeaderHovered},
+        {"Col_HeaderActive", ImGuiCol_HeaderActive},
+        {"Col_Separator", ImGuiCol_Separator},
+        {"Col_SeparatorHovered", ImGuiCol_SeparatorHovered},
+        {"Col_SeparatorActive", ImGuiCol_SeparatorActive},
+        {"Col_ResizeGrip", ImGuiCol_ResizeGrip},
+        {"Col_ResizeGripHovered", ImGuiCol_ResizeGripHovered},
+        {"Col_ResizeGripActive", ImGuiCol_ResizeGripActive},
+        {"Col_Tab", ImGuiCol_Tab},
+        {"Col_TabHovered", ImGuiCol_TabHovered},
+        // {"Col_TabActive", ImGuiCol_TabActive},
+        // {"Col_TabUnfocused", ImGuiCol_TabUnfocused},
+        // {"Col_TabUnfocusedActive", ImGuiCol_TabUnfocusedActive},
+        {"Col_PlotLines", ImGuiCol_PlotLines},
+        {"Col_PlotLinesHovered", ImGuiCol_PlotLinesHovered},
+        {"Col_PlotHistogram", ImGuiCol_PlotHistogram},
+        {"Col_PlotHistogramHovered", ImGuiCol_PlotHistogramHovered},
+        {"Col_TableHeaderBg", ImGuiCol_TableHeaderBg},
+        {"Col_TableBorderStrong", ImGuiCol_TableBorderStrong},
+        {"Col_TableBorderLight", ImGuiCol_TableBorderLight},
+        {"Col_TableRowBg", ImGuiCol_TableRowBg},
+        {"Col_TableRowBgAlt", ImGuiCol_TableRowBgAlt},
+        {"Col_TextSelectedBg", ImGuiCol_TextSelectedBg},
+        {"Col_DragDropTarget", ImGuiCol_DragDropTarget},
+        // {"Col_NavHighlight", ImGuiCol_NavHighlight},
+        {"Col_NavWindowingHighlight", ImGuiCol_NavWindowingHighlight},
+        {"Col_NavWindowingDimBg", ImGuiCol_NavWindowingDimBg},
+        {"Col_ModalWindowDimBg", ImGuiCol_ModalWindowDimBg},
+        {NULL, 0}
+    };
+
+    ImGuiCol col_idx = -1;
+    for (int i = 0; col_map[i].name != NULL; ++i) {
+        if (strcmp(col_name, col_map[i].name) == 0) {
+            col_idx = col_map[i].value;
+            break;
+        }
+    }
+
+    if (col_idx == -1) {
+        luaL_error(L, "Invalid ImGuiCol name: %s", col_name);
+        return 0;
+    }
+
+    ImVec4 color = style->Colors[col_idx];
+    lua_newtable(L);
+    lua_pushnumber(L, color.x);
+    lua_seti(L, -2, 1); // R
+    lua_pushnumber(L, color.y);
+    lua_seti(L, -2, 2); // G
+    lua_pushnumber(L, color.z);
+    lua_seti(L, -2, 3); // B
+    lua_pushnumber(L, color.w);
+    lua_seti(L, -2, 4); // A
+
+    return 1; // Return color table
+}
+
+// Start a tab bar
+static int lua_imgui_begin_tab_bar(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    bool result = igBeginTabBar(label, 0); // Default flags
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// End a tab bar
+static int lua_imgui_end_tab_bar(lua_State* L) {
+    igEndTabBar();
+    return 0;
+}
+
+// Start a tab item, returns true if selected
+static int lua_imgui_begin_tab_item(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    bool open = true; // Default to open
+    int top = lua_gettop(L);
+    if (top >= 2 && !lua_isnil(L, 2)) {
+        open = lua_toboolean(L, 2); // Optional open parameter
+    }
+    bool result = igBeginTabItem(label, &open, 0); // Default flags
+    lua_pushboolean(L, result);
+    lua_pushboolean(L, open); // Return modified open state
+    return 2;
+}
+
+// End a tab item
+static int lua_imgui_end_tab_item(lua_State* L) {
+    igEndTabItem();
+    return 0;
+}
+
+// Check if the last item is hovered
+static int lua_imgui_is_item_hovered(lua_State* L) {
+    bool result = igIsItemHovered(0); // Default flags
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Check if the last item is active (being held/dragged)
+static int lua_imgui_is_item_active(lua_State* L) {
+    bool result = igIsItemActive();
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Check if the last item was clicked
+static int lua_imgui_is_item_clicked(lua_State* L) {
+    int button = luaL_optinteger(L, 1, 0); // Default to left mouse button
+    bool result = igIsItemClicked(button);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Place the next item on the same line
+static int lua_imgui_same_line(lua_State* L) {
+    float offset_from_start_x = luaL_optnumber(L, 1, 0.0f); // Optional offset
+    float spacing_w = luaL_optnumber(L, 2, -1.0f); // Optional spacing
+    igSameLine(offset_from_start_x, spacing_w);
+    return 0;
+}
+
+// Draw a horizontal separator
+static int lua_imgui_separator(lua_State* L) {
+    igSeparator();
+    return 0;
+}
+
+// Add vertical spacing
+static int lua_imgui_spacing(lua_State* L) {
+    igSpacing();
+    return 0;
+}
+
+// Start a table
+static int lua_imgui_begin_table(lua_State* L) {
+    const char* str_id = luaL_checkstring(L, 1);
+    int column = luaL_checkinteger(L, 2);
+    int flags = luaL_optinteger(L, 3, 0); // Optional flags
+    float outer_size_x = luaL_optnumber(L, 4, 0.0f); // Optional outer size x
+    float outer_size_y = luaL_optnumber(L, 5, 0.0f); // Optional outer size y
+    float inner_width = luaL_optnumber(L, 6, 0.0f); // Optional inner width
+    bool result = igBeginTable(str_id, column, flags, (ImVec2){outer_size_x, outer_size_y}, inner_width);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// End a table
+static int lua_imgui_end_table(lua_State* L) {
+    igEndTable();
+    return 0;
+}
+
+// Advance to the next row in a table
+static int lua_imgui_table_next_row(lua_State* L) {
+    float min_row_height = luaL_optnumber(L, 1, 0.0f); // Optional min row height
+    igTableNextRow(0, min_row_height); // Default flags
+    return 0;
+}
+
+// Advance to the next column in the current row
+static int lua_imgui_table_next_column(lua_State* L) {
+    bool result = igTableNextColumn();
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Set the current column index
+static int lua_imgui_table_set_column_index(lua_State* L) {
+    int column_n = luaL_checkinteger(L, 1);
+    bool result = igTableSetColumnIndex(column_n);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Create an input text field
+static int lua_imgui_input_text(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    size_t buffer_size = luaL_optinteger(L, 2, 256); // Default buffer size
+    int flags = luaL_optinteger(L, 3, 0); // Optional flags
+    
+    // Allocate buffer for input text
+    char* buffer = (char*)malloc(buffer_size);
+    if (!buffer) {
+        luaL_error(L, "Failed to allocate buffer for InputText");
+        return 0;
+    }
+    memset(buffer, 0, buffer_size);
+    
+    // Optional initial value
+    if (lua_type(L, 4) == LUA_TSTRING) {
+        const char* initial = lua_tostring(L, 4);
+        strncpy(buffer, initial, buffer_size - 1);
+    }
+    
+    bool result = igInputText(label, buffer, buffer_size, flags, NULL, NULL);
+    lua_pushboolean(L, result); // Return whether the text was edited
+    lua_pushstring(L, buffer); // Return the current text
+    free(buffer);
+    return 2;
+}
+
+
 // Lua module registration
 static const luaL_Reg imgui_functions[] = {
     // test
@@ -815,8 +1376,31 @@ static const luaL_Reg imgui_functions[] = {
     {"ColorPicker3", lua_imgui_color_picker3},
     {"ColorPicker4", lua_imgui_color_picker4},
     {"ColorButton", lua_imgui_color_button},
+    // New style functions
+    {"SetStyleCustom", lua_imgui_set_style_custom},
+    // {"SetStyleCustoms", lua_imgui_set_style_customs}, // Table-based, does not work.
+    {"GetStyleCustom", lua_imgui_get_style_custom},
+    // New tab functions
+    {"BeginTabBar", lua_imgui_begin_tab_bar},
+    {"EndTabBar", lua_imgui_end_tab_bar},
+    {"BeginTabItem", lua_imgui_begin_tab_item},
+    {"EndTabItem", lua_imgui_end_tab_item},
+
+    {"IsItemHovered", lua_imgui_is_item_hovered},
+    {"IsItemActive", lua_imgui_is_item_active},
+    {"IsItemClicked", lua_imgui_is_item_clicked},
+    {"SameLine", lua_imgui_same_line},
+    {"Separator", lua_imgui_separator},
+    {"Spacing", lua_imgui_spacing},
+    {"BeginTable", lua_imgui_begin_table},
+    {"EndTable", lua_imgui_end_table},
+    {"TableNextRow", lua_imgui_table_next_row},
+    {"TableNextColumn", lua_imgui_table_next_column},
+    {"TableSetColumnIndex", lua_imgui_table_set_column_index},
+    {"InputText", lua_imgui_input_text},
     {NULL, NULL}
 };
+
 
 int luaopen_imgui(lua_State* L) {
     // Create imgui table
@@ -900,6 +1484,76 @@ int luaopen_imgui(lua_State* L) {
         lua_setfield(L, -2, color_flag_map[i].lua_field);
     }
     lua_setfield(L, -2, "ColorEditFlags");
+
+    // Create Col sub-table for ImGuiCol_ enums
+    lua_newtable(L);
+    struct {
+        const char* full_name;
+        const char* lua_field;
+        ImGuiCol value;
+    } col_map[] = {
+        {"Col_Text", "Text", ImGuiCol_Text},
+        {"Col_TextDisabled", "TextDisabled", ImGuiCol_TextDisabled},
+        {"Col_WindowBg", "WindowBg", ImGuiCol_WindowBg},
+        {"Col_ChildBg", "ChildBg", ImGuiCol_ChildBg},
+        {"Col_PopupBg", "PopupBg", ImGuiCol_PopupBg},
+        {"Col_Border", "Border", ImGuiCol_Border},
+        {"Col_BorderShadow", "BorderShadow", ImGuiCol_BorderShadow},
+        {"Col_FrameBg", "FrameBg", ImGuiCol_FrameBg},
+        {"Col_FrameBgHovered", "FrameBgHovered", ImGuiCol_FrameBgHovered},
+        {"Col_FrameBgActive", "FrameBgActive", ImGuiCol_FrameBgActive},
+        {"Col_TitleBg", "TitleBg", ImGuiCol_TitleBg},
+        {"Col_TitleBgActive", "TitleBgActive", ImGuiCol_TitleBgActive},
+        {"Col_TitleBgCollapsed", "TitleBgCollapsed", ImGuiCol_TitleBgCollapsed},
+        {"Col_MenuBarBg", "MenuBarBg", ImGuiCol_MenuBarBg},
+        {"Col_ScrollbarBg", "ScrollbarBg", ImGuiCol_ScrollbarBg},
+        {"Col_ScrollbarGrab", "ScrollbarGrab", ImGuiCol_ScrollbarGrab},
+        {"Col_ScrollbarGrabHovered", "ScrollbarGrabHovered", ImGuiCol_ScrollbarGrabHovered},
+        {"Col_ScrollbarGrabActive", "ScrollbarGrabActive", ImGuiCol_ScrollbarGrabActive},
+        {"Col_CheckMark", "CheckMark", ImGuiCol_CheckMark},
+        {"Col_SliderGrab", "SliderGrab", ImGuiCol_SliderGrab},
+        {"Col_SliderGrabActive", "SliderGrabActive", ImGuiCol_SliderGrabActive},
+        {"Col_Button", "Button", ImGuiCol_Button},
+        {"Col_ButtonHovered", "ButtonHovered", ImGuiCol_ButtonHovered},
+        {"Col_ButtonActive", "ButtonActive", ImGuiCol_ButtonActive},
+        {"Col_Header", "Header", ImGuiCol_Header},
+        {"Col_HeaderHovered", "HeaderHovered", ImGuiCol_HeaderHovered},
+        {"Col_HeaderActive", "HeaderActive", ImGuiCol_HeaderActive},
+        {"Col_Separator", "Separator", ImGuiCol_Separator},
+        {"Col_SeparatorHovered", "SeparatorHovered", ImGuiCol_SeparatorHovered},
+        {"Col_SeparatorActive", "SeparatorActive", ImGuiCol_SeparatorActive},
+        {"Col_ResizeGrip", "ResizeGrip", ImGuiCol_ResizeGrip},
+        {"Col_ResizeGripHovered", "ResizeGripHovered", ImGuiCol_ResizeGripHovered},
+        {"Col_ResizeGripActive", "ResizeGripActive", ImGuiCol_ResizeGripActive},
+        {"Col_Tab", "Tab", ImGuiCol_Tab},
+        {"Col_TabHovered", "TabHovered", ImGuiCol_TabHovered},
+        {"Col_HeaderActive", "HeaderActive", ImGuiCol_HeaderActive},
+        {"Col_TabSelected", "TabSelected", ImGuiCol_TabSelected},
+        // {"Col_TabUnfocusedActive", "TabUnfocusedActive", ImGuiCol_TabUnfocusedActive},
+        {"Col_PlotLines", "PlotLines", ImGuiCol_PlotLines},
+        {"Col_PlotLinesHovered", "PlotLinesHovered", ImGuiCol_PlotLinesHovered},
+        {"Col_PlotHistogram", "PlotHistogram", ImGuiCol_PlotHistogram},
+        {"Col_PlotHistogramHovered", "PlotHistogramHovered", ImGuiCol_PlotHistogramHovered},
+        {"Col_TableHeaderBg", "TableHeaderBg", ImGuiCol_TableHeaderBg},
+        {"Col_TableBorderStrong", "TableBorderStrong", ImGuiCol_TableBorderStrong},
+        {"Col_TableBorderLight", "TableBorderLight", ImGuiCol_TableBorderLight},
+        {"Col_TableRowBg", "TableRowBg", ImGuiCol_TableRowBg},
+        {"Col_TableRowBgAlt", "TableRowBgAlt", ImGuiCol_TableRowBgAlt},
+        {"Col_TextSelectedBg", "TextSelectedBg", ImGuiCol_TextSelectedBg},
+        {"Col_DragDropTarget", "DragDropTarget", ImGuiCol_DragDropTarget},
+        {"Col_NavWindowingHighlight", "NavWindowingHighlight", ImGuiCol_NavWindowingHighlight},
+        {"Col_NavWindowingHighlight", "NavWindowingHighlight", ImGuiCol_NavWindowingHighlight},
+        {"Col_NavWindowingDimBg", "NavWindowingDimBg", ImGuiCol_NavWindowingDimBg},
+        {"Col_ModalWindowDimBg", "ModalWindowDimBg", ImGuiCol_ModalWindowDimBg},
+        {NULL, NULL, 0}
+    };
+    
+    for (int i = 0; col_map[i].full_name != NULL; ++i) {
+        lua_pushstring(L, col_map[i].full_name);
+        lua_setfield(L, -2, col_map[i].lua_field);
+    }
+    lua_setfield(L, -2, "Col");
+
 
     
     return 1;

@@ -8,6 +8,8 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+
+
 #include "cimgui.h"
 #include "cimgui_impl.h"
 
@@ -17,7 +19,7 @@
 #include "raymath.h"
 
 #include <GLFW/glfw3.h>
-// #include "module_raylib_lua.h"  // You'll need to create this header
+
 #include "module_lua.h"
 #include "module_cimgui.h"
 #include "module_enet.h"
@@ -30,8 +32,6 @@
 #define RED        (Color){ 230, 41, 55, 255 }     // Red
 #define RAYWHITE   (Color){ 245, 245, 245, 255 }   // My own White (raylib logo)
 #define DARKGRAY   (Color){ 80, 80, 80, 255 }      // Dark Gray
-
-lua_State* g_lua_state;  // Declare global
 
 // Color, 4 components, R8G8B8A8 (32bit)
 typedef struct Color {
@@ -205,8 +205,8 @@ int main(int argc, char** argv) {
     igStyleColorsDark(NULL);
 
     // Initialize cimgui this goes here since we need imgui else error.
-    cimgui_init(); //init lua cimgui module
-    enet_init();
+    cimgui_init(); // init lua cimgui module
+    enet_init(); // init network lua module
 
     // Load Lua and check script
     const char* lua_script = "script.lua";
@@ -240,12 +240,18 @@ int main(int argc, char** argv) {
         // ImGui frame start
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
+
+        bool showDemoWindow = true;
         
         if (use_lua) {
             // For Lua: Call cimgui_call_draw if implemented, then draw
             igNewFrame();
             cimgui_call_draw();  // Call script's draw()
-            enet_update(); // Add network processing
+            // enet_update(); // Add network processing // better to single loop from cimgui_call_draw()
+
+            //show demo for refs.
+            if (showDemoWindow)
+                igShowDemoWindow(&showDemoWindow);
             igRender();
         } else {
             // Default UI
@@ -276,13 +282,12 @@ int main(int argc, char** argv) {
         DrawCube((Vector3){0.0f, 0.0f, 0.0f});
         rlDrawRenderBatchActive();
 
-        // Reset state for ImGui
+        // Reset state for ImGui ???
         glUseProgram(0);
         ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
         glfwSwapBuffers(window);
     }
 
-    // Cleanup
     // Cleanup
     if (use_lua) {
         lua_State* L = lua_get_state();
@@ -297,19 +302,6 @@ int main(int argc, char** argv) {
     enet_cleanup();
     cimgui_cleanup();
     lua_cleanup();
-
-    // if (use_lua && g_lua_state) {
-    //     lua_getglobal(g_lua_state, "cleanup");
-    //     if (lua_isfunction(g_lua_state, -1)) {
-    //         lua_pcall(g_lua_state, 0, 0, 0);
-    //     }
-    //     lua_close(g_lua_state);
-    //     g_lua_state = NULL;
-    // } else {
-    //     ImGui_ImplOpenGL3_Shutdown();
-    //     ImGui_ImplGlfw_Shutdown();
-    //     igDestroyContext(NULL);
-    // }
     
     rlglClose();
     glfwDestroyWindow(window);

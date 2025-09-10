@@ -24,12 +24,10 @@
 ```
 imgui.end()
 ```
-  This does not work due to match end for if statement conflict due how table works. To follow imgui format for easy to read and port to c/c++ to be use later.
+  This does not work due to match end for if statement conflict due how lua api table work. To follow imgui format for easy to read and port to c/c++ to be use later.
 
 # Information:
-  This is sample project that use cimgui (c language programing) knowing as imgui (c++ language programing ) to run with raylib but in abstraction low level by rlgl.h. Due to raylib.h can't be access to set up window and graphic.
-
-  Using the cimgui since there devs convert from imgui for better c language programing.
+  This is sample project that use cimgui (c language programing) convert from imgui (c++ language programing ) to run with raylib but in abstraction low level by rlgl.h. Due to raylib.h can't be access to set up window and graphic.
 
   By using the CMake for easy compile and fetch content to get those repo download to build the application. Reason is that there raylib have different type build compiler.
 
@@ -39,8 +37,8 @@ imgui.end()
 -- set up local or theme
 imgui.StyleColorsDark()
 
-function draw()-- testing
-    imgui.Begin("Lua UI") -- need to change the name to cimgui for easy read.
+function draw()-- this get call from c main loop.
+    imgui.Begin("Lua UI")
     imgui.Text("Hello from Lua!")
     imgui.End()
 end
@@ -82,6 +80,10 @@ end
 - [x] ColorPicker4
 - [x] ColorButton
 - [ ] 
+## Theme:
+- [x] imgui.GetStyleCustom(imgui.Col.Text)
+- [x] imgui.SetStyleCustom(imgui.Col.Text, {0.0, 0.0, 1.0, 1.0}) -- Set blue text
+- [ ] imgui.SetStyleCustoms({ }) -- Table-based, not working
 
 # Flags:
 - imgui.WindowFlags.NoTitleBar
@@ -104,6 +106,17 @@ end
 - imgui.WindowFlags.NoDecoration
 - imgui.WindowFlags.NoInputs
 - imgui.WindowFlags.NoNav
+
+- imgui.ColorEditFlags.NoAlpha
+- imgui.ColorEditFlags.'Name'
+
+- imgui.Col.Text
+- imgui.Col.WindowBg
+- imgui.Col.Button
+- imgui.Col.ButtonHovered
+- imgui.Col.'Name'
+
+  Work in progres.
 
 # Network:
  Using the Enet https://github.com/zpl-c/enet without secure for learning.
@@ -146,4 +159,4 @@ clean up
 - https://github.com/cimgui/cimgui/blob/docking_inter/backend_test/example_glfw_opengl3/main.c
 - https://github.com/WEREMSOFT/c99-raylib-cimgui-template
 - https://github.com/alfredbaudisch/raylib-cimgui
-- Grok AI Agent on x.com
+- Grok AI Agent on https://x.com/i/grok
