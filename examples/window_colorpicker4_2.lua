@@ -9,7 +9,7 @@ function draw()
         local new_color_picker4, changed_picker4 = imgui.ColorPicker4("RGBA Picker", color4, {
             -- imgui.ColorEditFlags.PickerHueBar,
             -- imgui.ColorEditFlags.NoTooltip
-        }, ref_color)
+        }, nil)
 
         if changed_picker4 then
             print("Picker4 changed to:", new_color_picker4[1], new_color_picker4[2], new_color_picker4[3], new_color_picker4[4])
