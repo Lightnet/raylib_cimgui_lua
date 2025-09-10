@@ -1,8 +1,7 @@
--- window options
+-- window checkbox
 
 local window_open = true
 local slider_value = 0.5
-
 
 function draw()
     if imgui.Begin("Lua ImGui Demo", window_open, {}) then

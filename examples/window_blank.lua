@@ -1,3 +1,5 @@
+-- window blank
+
 function draw()
     imgui.Begin("Lua UI")
     imgui.Text("Hello from Lua!")

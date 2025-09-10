@@ -7,7 +7,6 @@ function draw()
         -- imgui.WindowFlags.NoMove,
         -- imgui.WindowFlags.NoBackground,
         -- imgui.WindowFlags.NoTitleBar
-
     }) then
         imgui.Text("Hello from Lua!")
     end

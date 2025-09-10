@@ -1,6 +1,9 @@
 //===============================================
 // raylib, cimgui, lua sample build.
 //===============================================
+
+// #define ENET_IMPLEMENTATION
+
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
@@ -17,6 +20,7 @@
 // #include "module_raylib_lua.h"  // You'll need to create this header
 #include "module_lua.h"
 #include "module_cimgui.h"
+#include "module_enet.h"
 
 #include <stdio.h>              // Required for: printf()
 #include <math.h>               // For fmodf
@@ -202,6 +206,7 @@ int main(int argc, char** argv) {
 
     // Initialize cimgui this goes here since we need imgui else error.
     cimgui_init(); //init lua cimgui module
+    enet_init();
 
     // Load Lua and check script
     const char* lua_script = "script.lua";
@@ -240,6 +245,7 @@ int main(int argc, char** argv) {
             // For Lua: Call cimgui_call_draw if implemented, then draw
             igNewFrame();
             cimgui_call_draw();  // Call script's draw()
+            enet_update(); // Add network processing
             igRender();
         } else {
             // Default UI
@@ -288,6 +294,7 @@ int main(int argc, char** argv) {
             lua_cleanup();
         }
     }
+    enet_cleanup();
     cimgui_cleanup();
     lua_cleanup();
 

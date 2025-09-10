@@ -1,4 +1,4 @@
--- example.lua
+-- simple_demo.lua
 -- Simple ImGui demo using the simplified Lua bindings
 
 -- Apply dark style (call once at startup)

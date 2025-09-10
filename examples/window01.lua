@@ -1,4 +1,5 @@
--- window
+-- window no option
+-- text
 
 function draw()
     if imgui.Begin("Lua ImGui Demo") then

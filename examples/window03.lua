@@ -3,7 +3,11 @@
 local window_open = true
 
 function draw()
-    if imgui.Begin("Lua ImGui Demo", window_open, {}) then
+    if imgui.Begin("Lua ImGui Demo", window_open, {
+        imgui.WindowFlags.NoMove,
+        imgui.WindowFlags.NoTitleBar
+
+    }) then
         imgui.Text("Hello from Lua!")
     end
     imgui.End()

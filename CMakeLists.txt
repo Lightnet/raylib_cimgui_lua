@@ -127,6 +127,7 @@ set(APP_NAME ril)
 set(SRC_FILES
     src/module_cimgui.c
     src/module_lua.c
+    src/module_enet.c
 )
 
 add_executable(${APP_NAME}
@@ -149,6 +150,7 @@ target_include_directories(${APP_NAME} PUBLIC
     ${cimgui_SOURCE_DIR}/imgui                      # imgui
     ${raylib_SOURCE_DIR}/src                        # raylib include
     ${raylib_SOURCE_DIR}/src/external/glfw/include  # glfw
+    ${enet_SOURCE_DIR}/include                      # enet
 )
 
 # Set compile definitions for the application
@@ -158,11 +160,13 @@ target_compile_definitions(${APP_NAME} PRIVATE
     IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
     CIMGUI_USE_GLFW=1
     CIMGUI_USE_OPENGL3=1
+    ENET_IMPLEMENTATION=1
 )
 
 # Windows-specific settings
 if(WIN32)
-    target_link_libraries(${APP_NAME} PRIVATE gdi32 user32 shell32)
+    # ws2_32 # network
+    target_link_libraries(${APP_NAME} PRIVATE ws2_32 gdi32 user32 shell32)
     # target_link_options(${APP_NAME} PRIVATE -static-libgcc)
 
     target_link_options(${APP_NAME} PRIVATE

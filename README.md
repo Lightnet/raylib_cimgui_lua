@@ -36,13 +36,16 @@ imgui.end()
   Currently using the simple lua script to run imgui widgets.
 
 ```lua
-function draw()--testing
+-- set up local or theme
+imgui.StyleColorsDark()
+
+function draw()-- testing
     imgui.Begin("Lua UI") -- need to change the name to cimgui for easy read.
     imgui.Text("Hello from Lua!")
     imgui.End()
 end
 
-function cleanup()--not work on yet
+function cleanup()-- not work on yet
     print("Lua cleanup called")
 end
 ```
@@ -50,9 +53,8 @@ end
 # Note:
 - this is place holder code still need to make sure it coded and tested.
 
-
 # Features:
-- [ ] 
+- [ ] flags
 - [x] Begin
 - [x] End
 - [x] Text
@@ -74,8 +76,6 @@ end
 - [x] BeginTooltip
 - [x] EndTooltip
 - [x] SetTooltip
-- [ ] 
-- [ ] 
 - [ ] 
 - [ ] 
 
@@ -101,6 +101,8 @@ end
 - imgui.WindowFlags.NoInputs
 - imgui.WindowFlags.NoNav
 
+# Network:
+ Using the Enet https://github.com/zpl-c/enet without secure for learning.
 
 # Dev:
 

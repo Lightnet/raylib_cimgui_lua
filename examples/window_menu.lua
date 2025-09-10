@@ -1,4 +1,5 @@
-
+-- window menu
+-- main menu
 
 function draw()
     imgui.BeginMainMenuBar()

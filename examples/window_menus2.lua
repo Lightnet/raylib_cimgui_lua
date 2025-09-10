@@ -1,3 +1,7 @@
+
+-- main menu bar
+-- window menu bar
+
 local window_open = true
 
 function draw()
@@ -19,7 +23,7 @@ function draw()
                     -- Handle open
                     print("click")
                 end
-                -- imgui.set_tooltip("Open a file")
+                -- imgui.SetTooltip("Open a file")
                 imgui.EndMenu()
             end
             imgui.EndMenuBar()
