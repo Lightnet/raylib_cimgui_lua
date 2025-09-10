@@ -1,4 +1,6 @@
--- script.lua
+-- client.lua
+-- just test connect test only
+-- disconnnect not working
 local client = nil
 local peer = nil
 local connection_status = "Not connected"

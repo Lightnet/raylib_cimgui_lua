@@ -1,4 +1,6 @@
 -- server.lua
+-- just test connect test only
+-- disconnnect not working
 local server = nil
 
 function init()

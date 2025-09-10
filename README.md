@@ -76,7 +76,11 @@ end
 - [x] BeginTooltip
 - [x] EndTooltip
 - [x] SetTooltip
-- [ ] 
+- [x] ColorEdit3
+- [x] ColorEdit4
+- [x] ColorPicker3
+- [x] ColorPicker4
+- [x] ColorButton
 - [ ] 
 
 # Flags:
@@ -103,6 +107,8 @@ end
 
 # Network:
  Using the Enet https://github.com/zpl-c/enet without secure for learning.
+
+ This work in progress. As been rework and need relearn how code works.
 
 # Dev:
 

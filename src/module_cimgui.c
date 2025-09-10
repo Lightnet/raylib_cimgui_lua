@@ -342,6 +342,400 @@ static int lua_imgui_end_tooltip(lua_State* L) {
     return 0;
 }
 
+static int lua_imgui_color_edit3(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    
+    // Expect a table with 3 numbers for col[3]
+    luaL_checktype(L, 2, LUA_TTABLE);
+    float col[3];
+    for (int i = 0; i < 3; i++) {
+        lua_geti(L, 2, i + 1);
+        col[i] = (float)luaL_checknumber(L, -1);
+        lua_pop(L, 1);
+    }
+    
+    ImGuiColorEditFlags flags = 0;
+    if (lua_gettop(L) >= 3 && !lua_isnoneornil(L, 3)) {
+        if (lua_isnumber(L, 3)) {
+            flags = (ImGuiColorEditFlags)lua_tointeger(L, 3);
+        } else if (lua_istable(L, 3)) {
+            lua_pushnil(L);
+            while (lua_next(L, 3) != 0) {
+                if (lua_isstring(L, -1)) {
+                    const char* flag_name = lua_tostring(L, -1);
+                    static const struct {
+                        const char* name;
+                        ImGuiColorEditFlags value;
+                    } flag_map[] = {
+                        {"NoAlpha", ImGuiColorEditFlags_NoAlpha},
+                        {"NoPicker", ImGuiColorEditFlags_NoPicker},
+                        {"NoOptions", ImGuiColorEditFlags_NoOptions},
+                        {"NoSmallPreview", ImGuiColorEditFlags_NoSmallPreview},
+                        {"NoInputs", ImGuiColorEditFlags_NoInputs},
+                        {"NoTooltip", ImGuiColorEditFlags_NoTooltip},
+                        {"NoLabel", ImGuiColorEditFlags_NoLabel},
+                        {"NoSidePreview", ImGuiColorEditFlags_NoSidePreview},
+                        {"NoDragDrop", ImGuiColorEditFlags_NoDragDrop},
+                        {"AlphaBar", ImGuiColorEditFlags_AlphaBar},
+                        // {"AlphaPreview", ImGuiColorEditFlags_AlphaPreview},
+                        {"AlphaPreviewHalf", ImGuiColorEditFlags_AlphaPreviewHalf},
+                        {"HDR", ImGuiColorEditFlags_HDR},
+                        {"DisplayRGB", ImGuiColorEditFlags_DisplayRGB},
+                        {"DisplayHSV", ImGuiColorEditFlags_DisplayHSV},
+                        {"DisplayHex", ImGuiColorEditFlags_DisplayHex},
+                        {"Uint8", ImGuiColorEditFlags_Uint8},
+                        {"Float", ImGuiColorEditFlags_Float},
+                        {"PickerHueBar", ImGuiColorEditFlags_PickerHueBar},
+                        {"PickerHueWheel", ImGuiColorEditFlags_PickerHueWheel},
+                        {"InputRGB", ImGuiColorEditFlags_InputRGB},
+                        {"InputHSV", ImGuiColorEditFlags_InputHSV},
+                        {NULL, 0}
+                    };
+                    for (int i = 0; flag_map[i].name != NULL; ++i) {
+                        if (strcmp(flag_name, flag_map[i].name) == 0) {
+                            flags |= flag_map[i].value;
+                            break;
+                        }
+                    }
+                }
+                lua_pop(L, 1);
+            }
+        }
+    }
+    
+    bool changed = igColorEdit3(label, col, flags);
+    
+    lua_newtable(L);
+    for (int i = 0; i < 3; i++) {
+        lua_pushnumber(L, col[i]);
+        lua_seti(L, -2, i + 1);
+    }
+    
+    lua_pushboolean(L, changed);
+    return 2;
+}
+
+static int lua_imgui_color_edit4(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    
+    // Expect a table with 4 numbers for col[4]
+    luaL_checktype(L, 2, LUA_TTABLE);
+    float col[4];
+    for (int i = 0; i < 4; i++) {
+        lua_geti(L, 2, i + 1);
+        col[i] = (float)luaL_checknumber(L, -1);
+        lua_pop(L, 1);
+    }
+    
+    // Handle flags (third argument): int or table of strings
+    ImGuiColorEditFlags flags = 0;
+    if (lua_gettop(L) >= 3 && !lua_isnoneornil(L, 3)) {
+        if (lua_isnumber(L, 3)) {
+            flags = (ImGuiColorEditFlags)lua_tointeger(L, 3);
+        } else if (lua_istable(L, 3)) {
+            lua_pushnil(L);
+            while (lua_next(L, 3) != 0) {
+                if (lua_isstring(L, -1)) {
+                    const char* flag_name = lua_tostring(L, -1);
+                    static const struct {
+                        const char* name;
+                        ImGuiColorEditFlags value;
+                    } flag_map[] = {
+                        {"NoAlpha", ImGuiColorEditFlags_NoAlpha},
+                        {"NoPicker", ImGuiColorEditFlags_NoPicker},
+                        {"NoOptions", ImGuiColorEditFlags_NoOptions},
+                        {"NoSmallPreview", ImGuiColorEditFlags_NoSmallPreview},
+                        {"NoInputs", ImGuiColorEditFlags_NoInputs},
+                        {"NoTooltip", ImGuiColorEditFlags_NoTooltip},
+                        {"NoLabel", ImGuiColorEditFlags_NoLabel},
+                        {"NoSidePreview", ImGuiColorEditFlags_NoSidePreview},
+                        {"NoDragDrop", ImGuiColorEditFlags_NoDragDrop},
+                        {"AlphaBar", ImGuiColorEditFlags_AlphaBar},
+                        // {"AlphaPreview", ImGuiColorEditFlags_AlphaPreview},
+                        {"AlphaPreviewHalf", ImGuiColorEditFlags_AlphaPreviewHalf},
+                        {"HDR", ImGuiColorEditFlags_HDR},
+                        {"DisplayRGB", ImGuiColorEditFlags_DisplayRGB},
+                        {"DisplayHSV", ImGuiColorEditFlags_DisplayHSV},
+                        {"DisplayHex", ImGuiColorEditFlags_DisplayHex},
+                        {"Uint8", ImGuiColorEditFlags_Uint8},
+                        {"Float", ImGuiColorEditFlags_Float},
+                        {"PickerHueBar", ImGuiColorEditFlags_PickerHueBar},
+                        {"PickerHueWheel", ImGuiColorEditFlags_PickerHueWheel},
+                        {"InputRGB", ImGuiColorEditFlags_InputRGB},
+                        {"InputHSV", ImGuiColorEditFlags_InputHSV},
+                        {NULL, 0}
+                    };
+                    for (int i = 0; flag_map[i].name != NULL; ++i) {
+                        if (strcmp(flag_name, flag_map[i].name) == 0) {
+                            flags |= flag_map[i].value;
+                            break;
+                        }
+                    }
+                }
+                lua_pop(L, 1);
+            }
+        }
+    }
+    
+    bool changed = igColorEdit4(label, col, flags);
+    
+    // Push modified color values back as a table
+    lua_newtable(L);
+    for (int i = 0; i < 4; i++) {
+        lua_pushnumber(L, col[i]);
+        lua_seti(L, -2, i + 1);
+    }
+    
+    lua_pushboolean(L, changed);
+    return 2; // Return color table and changed flag
+}
+
+static int lua_imgui_color_picker3(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    
+    // Expect a table with 3 numbers for col[3]
+    luaL_checktype(L, 2, LUA_TTABLE);
+    float col[3];
+    for (int i = 0; i < 3; i++) {
+        lua_geti(L, 2, i + 1);
+        col[i] = (float)luaL_checknumber(L, -1);
+        lua_pop(L, 1);
+    }
+    
+    // Handle flags (third argument): int or table of strings
+    ImGuiColorEditFlags flags = 0;
+    if (lua_gettop(L) >= 3 && !lua_isnoneornil(L, 3)) {
+        if (lua_isnumber(L, 3)) {
+            flags = (ImGuiColorEditFlags)lua_tointeger(L, 3);
+        } else if (lua_istable(L, 3)) {
+            lua_pushnil(L);
+            while (lua_next(L, 3) != 0) {
+                if (lua_isstring(L, -1)) {
+                    const char* flag_name = lua_tostring(L, -1);
+                    static const struct {
+                        const char* name;
+                        ImGuiColorEditFlags value;
+                    } flag_map[] = {
+                        {"NoAlpha", ImGuiColorEditFlags_NoAlpha},
+                        {"NoPicker", ImGuiColorEditFlags_NoPicker},
+                        {"NoOptions", ImGuiColorEditFlags_NoOptions},
+                        {"NoSmallPreview", ImGuiColorEditFlags_NoSmallPreview},
+                        {"NoInputs", ImGuiColorEditFlags_NoInputs},
+                        {"NoTooltip", ImGuiColorEditFlags_NoTooltip},
+                        {"NoLabel", ImGuiColorEditFlags_NoLabel},
+                        {"NoSidePreview", ImGuiColorEditFlags_NoSidePreview},
+                        {"NoDragDrop", ImGuiColorEditFlags_NoDragDrop},
+                        {"AlphaBar", ImGuiColorEditFlags_AlphaBar},
+                        // {"AlphaPreview", ImGuiColorEditFlags_AlphaPreview},
+                        {"AlphaPreviewHalf", ImGuiColorEditFlags_AlphaPreviewHalf},
+                        {"HDR", ImGuiColorEditFlags_HDR},
+                        {"DisplayRGB", ImGuiColorEditFlags_DisplayRGB},
+                        {"DisplayHSV", ImGuiColorEditFlags_DisplayHSV},
+                        {"DisplayHex", ImGuiColorEditFlags_DisplayHex},
+                        {"Uint8", ImGuiColorEditFlags_Uint8},
+                        {"Float", ImGuiColorEditFlags_Float},
+                        {"PickerHueBar", ImGuiColorEditFlags_PickerHueBar},
+                        {"PickerHueWheel", ImGuiColorEditFlags_PickerHueWheel},
+                        {"InputRGB", ImGuiColorEditFlags_InputRGB},
+                        {"InputHSV", ImGuiColorEditFlags_InputHSV},
+                        {NULL, 0}
+                    };
+                    for (int i = 0; flag_map[i].name != NULL; ++i) {
+                        if (strcmp(flag_name, flag_map[i].name) == 0) {
+                            flags |= flag_map[i].value;
+                            break;
+                        }
+                    }
+                }
+                lua_pop(L, 1);
+            }
+        }
+    }
+    
+    bool changed = igColorPicker3(label, col, flags);
+    
+    // Push modified color values back as a table
+    lua_newtable(L);
+    for (int i = 0; i < 3; i++) {
+        lua_pushnumber(L, col[i]);
+        lua_seti(L, -2, i + 1);
+    }
+    
+    lua_pushboolean(L, changed);
+    return 2; // Return color table and changed flag
+}
+
+static int lua_imgui_color_picker4(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    
+    // Expect a table with 4 numbers for col[4]
+    luaL_checktype(L, 2, LUA_TTABLE);
+    float col[4];
+    for (int i = 0; i < 4; i++) {
+        lua_geti(L, 2, i + 1);
+        col[i] = (float)luaL_checknumber(L, -1);
+        lua_pop(L, 1);
+    }
+    
+    // Handle flags (third argument): int or table of strings
+    ImGuiColorEditFlags flags = 0;
+    if (lua_gettop(L) >= 3 && !lua_isnoneornil(L, 3)) {
+        if (lua_isnumber(L, 3)) {
+            flags = (ImGuiColorEditFlags)lua_tointeger(L, 3);
+        } else if (lua_istable(L, 3)) {
+            lua_pushnil(L);
+            while (lua_next(L, 3) != 0) {
+                if (lua_isstring(L, -1)) {
+                    const char* flag_name = lua_tostring(L, -1);
+                    static const struct {
+                        const char* name;
+                        ImGuiColorEditFlags value;
+                    } flag_map[] = {
+                        {"NoAlpha", ImGuiColorEditFlags_NoAlpha},
+                        {"NoPicker", ImGuiColorEditFlags_NoPicker},
+                        {"NoOptions", ImGuiColorEditFlags_NoOptions},
+                        {"NoSmallPreview", ImGuiColorEditFlags_NoSmallPreview},
+                        {"NoInputs", ImGuiColorEditFlags_NoInputs},
+                        {"NoTooltip", ImGuiColorEditFlags_NoTooltip},
+                        {"NoLabel", ImGuiColorEditFlags_NoLabel},
+                        {"NoSidePreview", ImGuiColorEditFlags_NoSidePreview},
+                        {"NoDragDrop", ImGuiColorEditFlags_NoDragDrop},
+                        {"AlphaBar", ImGuiColorEditFlags_AlphaBar},
+                        // {"AlphaPreview", ImGuiColorEditFlags_AlphaPreview},
+                        {"AlphaPreviewHalf", ImGuiColorEditFlags_AlphaPreviewHalf},
+                        {"HDR", ImGuiColorEditFlags_HDR},
+                        {"DisplayRGB", ImGuiColorEditFlags_DisplayRGB},
+                        {"DisplayHSV", ImGuiColorEditFlags_DisplayHSV},
+                        {"DisplayHex", ImGuiColorEditFlags_DisplayHex},
+                        {"Uint8", ImGuiColorEditFlags_Uint8},
+                        {"Float", ImGuiColorEditFlags_Float},
+                        {"PickerHueBar", ImGuiColorEditFlags_PickerHueBar},
+                        {"PickerHueWheel", ImGuiColorEditFlags_PickerHueWheel},
+                        {"InputRGB", ImGuiColorEditFlags_InputRGB},
+                        {"InputHSV", ImGuiColorEditFlags_InputHSV},
+                        {NULL, 0}
+                    };
+                    for (int i = 0; flag_map[i].name != NULL; ++i) {
+                        if (strcmp(flag_name, flag_map[i].name) == 0) {
+                            flags |= flag_map[i].value;
+                            break;
+                        }
+                    }
+                }
+                lua_pop(L, 1);
+            }
+        }
+    }
+    
+    // Optional ref_col (fourth argument, table of 4 floats or nil)
+    float* ref_col = NULL;
+    float ref_col_array[4];
+    if (lua_gettop(L) >= 4 && lua_istable(L, 4)) {
+        for (int i = 0; i < 4; i++) {
+            lua_geti(L, 4, i + 1);
+            ref_col_array[i] = (float)luaL_checknumber(L, -1);
+            lua_pop(L, 1);
+        }
+        ref_col = ref_col_array;
+    }
+    
+    bool changed = igColorPicker4(label, col, flags, ref_col);
+    
+    // Push modified color values back as a table
+    lua_newtable(L);
+    for (int i = 0; i < 4; i++) {
+        lua_pushnumber(L, col[i]);
+        lua_seti(L, -2, i + 1);
+    }
+    
+    lua_pushboolean(L, changed);
+    return 2; // Return color table and changed flag
+}
+
+
+static int lua_imgui_color_button(lua_State* L) {
+    const char* desc_id = luaL_checkstring(L, 1);
+    
+    // Expect a table with 4 numbers for col (ImVec4)
+    luaL_checktype(L, 2, LUA_TTABLE);
+    ImVec4 col;
+    lua_geti(L, 2, 1);
+    col.x = (float)luaL_checknumber(L, -1);
+    lua_geti(L, 2, 2);
+    col.y = (float)luaL_checknumber(L, -1);
+    lua_geti(L, 2, 3);
+    col.z = (float)luaL_checknumber(L, -1);
+    lua_geti(L, 2, 4);
+    col.w = (float)luaL_checknumber(L, -1);
+    lua_pop(L, 4);
+    
+    // Handle flags (third argument): int or table of strings
+    ImGuiColorEditFlags flags = 0;
+    if (lua_gettop(L) >= 3 && !lua_isnoneornil(L, 3)) {
+        if (lua_isnumber(L, 3)) {
+            flags = (ImGuiColorEditFlags)lua_tointeger(L, 3);
+        } else if (lua_istable(L, 3)) {
+            lua_pushnil(L);
+            while (lua_next(L, 3) != 0) {
+                if (lua_isstring(L, -1)) {
+                    const char* flag_name = lua_tostring(L, -1);
+                    static const struct {
+                        const char* name;
+                        ImGuiColorEditFlags value;
+                    } flag_map[] = {
+                        {"NoAlpha", ImGuiColorEditFlags_NoAlpha},
+                        {"NoPicker", ImGuiColorEditFlags_NoPicker},
+                        {"NoOptions", ImGuiColorEditFlags_NoOptions},
+                        {"NoSmallPreview", ImGuiColorEditFlags_NoSmallPreview},
+                        {"NoInputs", ImGuiColorEditFlags_NoInputs},
+                        {"NoTooltip", ImGuiColorEditFlags_NoTooltip},
+                        {"NoLabel", ImGuiColorEditFlags_NoLabel},
+                        {"NoSidePreview", ImGuiColorEditFlags_NoSidePreview},
+                        {"NoDragDrop", ImGuiColorEditFlags_NoDragDrop},
+                        {"AlphaBar", ImGuiColorEditFlags_AlphaBar},
+                        // {"AlphaPreview", ImGuiColorEditFlags_AlphaPreview},
+                        {"AlphaPreviewHalf", ImGuiColorEditFlags_AlphaPreviewHalf},
+                        {"HDR", ImGuiColorEditFlags_HDR},
+                        {"DisplayRGB", ImGuiColorEditFlags_DisplayRGB},
+                        {"DisplayHSV", ImGuiColorEditFlags_DisplayHSV},
+                        {"DisplayHex", ImGuiColorEditFlags_DisplayHex},
+                        {"Uint8", ImGuiColorEditFlags_Uint8},
+                        {"Float", ImGuiColorEditFlags_Float},
+                        {"PickerHueBar", ImGuiColorEditFlags_PickerHueBar},
+                        {"PickerHueWheel", ImGuiColorEditFlags_PickerHueWheel},
+                        {"InputRGB", ImGuiColorEditFlags_InputRGB},
+                        {"InputHSV", ImGuiColorEditFlags_InputHSV},
+                        {NULL, 0}
+                    };
+                    for (int i = 0; flag_map[i].name != NULL; ++i) {
+                        if (strcmp(flag_name, flag_map[i].name) == 0) {
+                            flags |= flag_map[i].value;
+                            break;
+                        }
+                    }
+                }
+                lua_pop(L, 1);
+            }
+        }
+    }
+    
+    // Optional size (fourth argument, table with 2 numbers or default to {0, 0})
+    ImVec2 size = {0.0f, 0.0f};
+    if (lua_gettop(L) >= 4 && lua_istable(L, 4)) {
+        lua_geti(L, 4, 1);
+        size.x = (float)luaL_checknumber(L, -1);
+        lua_geti(L, 4, 2);
+        size.y = (float)luaL_checknumber(L, -1);
+        lua_pop(L, 2);
+    }
+    
+    bool pressed = igColorButton(desc_id, col, flags, size);
+    
+    lua_pushboolean(L, pressed);
+    return 1; // Return pressed flag
+}
+
+
 // Lua-C function to set tooltip
 static int lua_imgui_set_tooltip(lua_State* L) {
     const char* fmt = luaL_checkstring(L, 1);
@@ -415,7 +809,12 @@ static const luaL_Reg imgui_functions[] = {
     {"BeginTooltip", lua_imgui_begin_tooltip},
     {"EndTooltip", lua_imgui_end_tooltip},
     {"SetTooltip", lua_imgui_set_tooltip},
-    
+    // New color functions
+    {"ColorEdit3", lua_imgui_color_edit3},
+    {"ColorEdit4", lua_imgui_color_edit4},
+    {"ColorPicker3", lua_imgui_color_picker3},
+    {"ColorPicker4", lua_imgui_color_picker4},
+    {"ColorButton", lua_imgui_color_button},
     {NULL, NULL}
 };
 
@@ -463,6 +862,45 @@ int luaopen_imgui(lua_State* L) {
     
     // Set WindowFlags as a field in the main imgui table
     lua_setfield(L, -2, "WindowFlags");
+
+    // Create ColorEditFlags sub-table
+    lua_newtable(L);
+    struct {
+        const char* full_name;
+        const char* lua_field;
+        ImGuiColorEditFlags value;
+    } color_flag_map[] = {
+        {"ColorEditFlags_NoAlpha", "NoAlpha", ImGuiColorEditFlags_NoAlpha},
+        {"ColorEditFlags_NoPicker", "NoPicker", ImGuiColorEditFlags_NoPicker},
+        {"ColorEditFlags_NoOptions", "NoOptions", ImGuiColorEditFlags_NoOptions},
+        {"ColorEditFlags_NoSmallPreview", "NoSmallPreview", ImGuiColorEditFlags_NoSmallPreview},
+        {"ColorEditFlags_NoInputs", "NoInputs", ImGuiColorEditFlags_NoInputs},
+        {"ColorEditFlags_NoTooltip", "NoTooltip", ImGuiColorEditFlags_NoTooltip},
+        {"ColorEditFlags_NoLabel", "NoLabel", ImGuiColorEditFlags_NoLabel},
+        {"ColorEditFlags_NoSidePreview", "NoSidePreview", ImGuiColorEditFlags_NoSidePreview},
+        {"ColorEditFlags_NoDragDrop", "NoDragDrop", ImGuiColorEditFlags_NoDragDrop},
+        {"ColorEditFlags_AlphaBar", "AlphaBar", ImGuiColorEditFlags_AlphaBar},
+        // {"ColorEditFlags_AlphaPreview", "AlphaPreview", ImGuiColorEditFlags_AlphaPreview},
+        {"ColorEditFlags_AlphaPreviewHalf", "AlphaPreviewHalf", ImGuiColorEditFlags_AlphaPreviewHalf},
+        {"ColorEditFlags_HDR", "HDR", ImGuiColorEditFlags_HDR},
+        {"ColorEditFlags_DisplayRGB", "DisplayRGB", ImGuiColorEditFlags_DisplayRGB},
+        {"ColorEditFlags_DisplayHSV", "DisplayHSV", ImGuiColorEditFlags_DisplayHSV},
+        {"ColorEditFlags_DisplayHex", "DisplayHex", ImGuiColorEditFlags_DisplayHex},
+        {"ColorEditFlags_Uint8", "Uint8", ImGuiColorEditFlags_Uint8},
+        {"ColorEditFlags_Float", "Float", ImGuiColorEditFlags_Float},
+        {"ColorEditFlags_PickerHueBar", "PickerHueBar", ImGuiColorEditFlags_PickerHueBar},
+        {"ColorEditFlags_PickerHueWheel", "PickerHueWheel", ImGuiColorEditFlags_PickerHueWheel},
+        {"ColorEditFlags_InputRGB", "InputRGB", ImGuiColorEditFlags_InputRGB},
+        {"ColorEditFlags_InputHSV", "InputHSV", ImGuiColorEditFlags_InputHSV},
+        {NULL, NULL, 0}
+    };
+    
+    for (int i = 0; color_flag_map[i].full_name != NULL; ++i) {
+        lua_pushstring(L, color_flag_map[i].full_name);
+        lua_setfield(L, -2, color_flag_map[i].lua_field);
+    }
+    lua_setfield(L, -2, "ColorEditFlags");
+
     
     return 1;
 }

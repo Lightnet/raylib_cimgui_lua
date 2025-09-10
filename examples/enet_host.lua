@@ -1,4 +1,5 @@
--- window Slider
+-- window
+-- not working yet.
 
 local window_open = true
 local slider_value = 0.5
