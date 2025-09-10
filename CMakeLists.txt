@@ -108,11 +108,25 @@ add_library(lua STATIC ${LUA_SRC})
 target_include_directories(lua PUBLIC ${lua_SOURCE_DIR})
 
 #================================================
+# ENET
+#================================================
+FetchContent_Declare(
+    enet
+    GIT_REPOSITORY https://github.com/zpl-c/enet.git
+    GIT_TAG v2.6.5
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(enet)
+
+
+
+#================================================
 # Application
 #================================================
 set(APP_NAME ril)
 set(SRC_FILES
-    src/module_raylib_lua.c
+    src/module_cimgui.c
+    src/module_lua.c
 )
 
 add_executable(${APP_NAME}

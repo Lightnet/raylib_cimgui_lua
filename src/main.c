@@ -14,7 +14,9 @@
 #include "raymath.h"
 
 #include <GLFW/glfw3.h>
-#include "module_raylib_lua.h"  // You'll need to create this header
+// #include "module_raylib_lua.h"  // You'll need to create this header
+#include "module_lua.h"
+#include "module_cimgui.h"
 
 #include <stdio.h>              // Required for: printf()
 #include <math.h>               // For fmodf
@@ -184,6 +186,9 @@ int main(int argc, char** argv) {
     Vector3 cubePosition = { 0.0f, 0.0f, 0.0f };        // Cube at center
     float rotation = 0.0f;  // For animation (updated by slider or auto)
 
+    // Initialize Lua
+    lua_init();
+
     // Setup ImGui
     // need to setup here for lua init setup else it crashed.
     igCreateContext(NULL);
@@ -195,30 +200,24 @@ int main(int argc, char** argv) {
     ImGui_ImplOpenGL3_Init(glsl_version);
     igStyleColorsDark(NULL);
 
-    // create lua module
-    // Check for Lua script
-    const char* lua_script = "script.lua";  // Default
+    // Initialize cimgui this goes here since we need imgui else error.
+    cimgui_init(); //init lua cimgui module
+
+    // Load Lua and check script
+    const char* lua_script = "script.lua";
     if (argc > 1) {
-        lua_script = argv[1];  // Use first arg as script file
+        lua_script = argv[1];
         printf("Using Lua script from arg: %s\n", lua_script);
-    } else {
-        printf("No script arg provided, using default: %s\n", lua_script);
     }
     bool use_lua = false;
-    
     if (file_exists(lua_script)) {
-        printf("Found Lua script: %s\n", lua_script);
-        use_lua = rl_lua_load_script(lua_script);
-        if (use_lua) {
-            printf("Lua script loaded successfully\n");
-        } else {
+        use_lua = lua_load_script(lua_script);
+        if (!use_lua) {
             printf("Failed to load Lua script '%s', falling back to default UI\n", lua_script);
         }
     } else {
         printf("Lua script '%s' does not exist, using default UI\n", lua_script);
     }
-
-
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -238,10 +237,9 @@ int main(int argc, char** argv) {
         ImGui_ImplGlfw_NewFrame();
         
         if (use_lua) {
-            // For Lua: Call new_frame if implemented, then draw
-            rl_lua_imgui_new_frame();  // Optional: For Lua-specific frame setup
+            // For Lua: Call cimgui_call_draw if implemented, then draw
             igNewFrame();
-            rl_lua_call_draw();  // Call script's draw()
+            cimgui_call_draw();  // Call script's draw()
             igRender();
         } else {
             // Default UI
@@ -279,18 +277,32 @@ int main(int argc, char** argv) {
     }
 
     // Cleanup
-    if (use_lua && g_lua_state) {
-        lua_getglobal(g_lua_state, "cleanup");
-        if (lua_isfunction(g_lua_state, -1)) {
-            lua_pcall(g_lua_state, 0, 0, 0);
+    // Cleanup
+    if (use_lua) {
+        lua_State* L = lua_get_state();
+        if (L) {
+            lua_getglobal(L, "cleanup");
+            if (lua_isfunction(L, -1)) {
+                lua_pcall(L, 0, 0, 0);
+            }
+            lua_cleanup();
         }
-        lua_close(g_lua_state);
-        g_lua_state = NULL;
-    } else {
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        igDestroyContext(NULL);
     }
+    cimgui_cleanup();
+    lua_cleanup();
+
+    // if (use_lua && g_lua_state) {
+    //     lua_getglobal(g_lua_state, "cleanup");
+    //     if (lua_isfunction(g_lua_state, -1)) {
+    //         lua_pcall(g_lua_state, 0, 0, 0);
+    //     }
+    //     lua_close(g_lua_state);
+    //     g_lua_state = NULL;
+    // } else {
+    //     ImGui_ImplOpenGL3_Shutdown();
+    //     ImGui_ImplGlfw_Shutdown();
+    //     igDestroyContext(NULL);
+    // }
     
     rlglClose();
     glfwDestroyWindow(window);
