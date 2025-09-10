@@ -10,6 +10,7 @@
 #include "cimgui_impl.h"
 #include "rlgl.h"
 #include "raymath.h"
+#include <float.h>
 
 // Global ImGui context pointer
 static ImGuiContext* g_imgui_context = NULL;
@@ -1343,6 +1344,296 @@ static int lua_imgui_input_text(lua_State* L) {
     return 2;
 }
 
+// Multiline text input
+static int lua_imgui_input_text_multiline(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    size_t buffer_size = luaL_optinteger(L, 2, 1024); // Default buffer size
+    float size_x = luaL_optnumber(L, 3, 0.0f); // Optional size x
+    float size_y = luaL_optnumber(L, 4, 0.0f); // Optional size y
+    int flags = luaL_optinteger(L, 5, 0); // Optional flags
+    
+    // Allocate buffer for input text
+    char* buffer = (char*)malloc(buffer_size);
+    if (!buffer) {
+        luaL_error(L, "Failed to allocate buffer for InputTextMultiline");
+        return 0;
+    }
+    memset(buffer, 0, buffer_size);
+    
+    // Optional initial value
+    if (lua_type(L, 6) == LUA_TSTRING) {
+        const char* initial = lua_tostring(L, 6);
+        strncpy(buffer, initial, buffer_size - 1);
+    }
+    
+    bool result = igInputTextMultiline(label, buffer, buffer_size, (ImVec2){size_x, size_y}, flags, NULL, NULL);
+    lua_pushboolean(L, result); // Return whether the text was edited
+    lua_pushstring(L, buffer); // Return the current text
+    free(buffer);
+    return 2;
+}
+
+// Radio button widget
+static int lua_imgui_radio_button(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    int value = luaL_checkinteger(L, 2); // Current value
+    int v_button = luaL_checkinteger(L, 3); // Value for this radio button
+    bool result = igRadioButton_IntPtr(label, &value, v_button);
+    lua_pushboolean(L, result); // Return whether the radio button was clicked
+    lua_pushinteger(L, value); // Return the updated value
+    return 2;
+}
+
+// Progress bar widget
+static int lua_imgui_progress_bar(lua_State* L) {
+    float fraction = luaL_checknumber(L, 1); // Progress fraction (0.0 to 1.0)
+    float size_x = luaL_optnumber(L, 2, -1.0f); // Optional size x
+    float size_y = luaL_optnumber(L, 3, 0.0f); // Optional size y
+    const char* overlay = luaL_optstring(L, 4, NULL); // Optional overlay text
+    igProgressBar(fraction, (ImVec2){size_x, size_y}, overlay);
+    return 0;
+}
+
+// Tree node widget
+static int lua_imgui_tree_node(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    bool result = igTreeNode_Str(label);
+    lua_pushboolean(L, result); // Return whether the node is open
+    return 1;
+}
+
+// End a tree node (call if TreeNode returns true)
+static int lua_imgui_tree_pop(lua_State* L) {
+    igTreePop();
+    return 0;
+}
+
+// Bullet point
+static int lua_imgui_bullet(lua_State* L) {
+    igBullet();
+    return 0;
+}
+
+// Colored text
+static int lua_imgui_text_colored(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE); // Color table {r, g, b, a}
+    const char* text = luaL_checkstring(L, 2);
+    
+    ImVec4 color = {1.0f, 1.0f, 1.0f, 1.0f}; // Default white
+    int len = lua_rawlen(L, 1);
+    if (len < 3 || len > 4) {
+        luaL_error(L, "Color array must have 3 or 4 components, got %d", len);
+        return 0;
+    }
+    
+    lua_geti(L, 1, 1);
+    color.x = (float)luaL_checknumber(L, -1);
+    lua_geti(L, 1, 2);
+    color.y = (float)luaL_checknumber(L, -1);
+    lua_geti(L, 1, 3);
+    color.z = (float)luaL_checknumber(L, -1);
+    if (len == 4) {
+        lua_geti(L, 1, 4);
+        color.w = (float)luaL_checknumber(L, -1);
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 3);
+    
+    if (color.x < 0.0f || color.x > 1.0f || color.y < 0.0f || color.y > 1.0f ||
+        color.z < 0.0f || color.z > 1.0f || color.w < 0.0f || color.w > 1.0f) {
+        luaL_error(L, "Color values out of range [0.0, 1.0]");
+        return 0;
+    }
+    
+    igTextColored(color, "%s", text);
+    return 0;
+}
+
+// Combo box (dropdown menu)
+static int lua_imgui_combo(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    int current_item = luaL_checkinteger(L, 2); // Current selected item index (0-based)
+    luaL_checktype(L, 3, LUA_TTABLE); // Items as a Lua table
+    int flags = luaL_optinteger(L, 4, 0); // Optional flags
+
+    // Get items from Lua table
+    int item_count = lua_rawlen(L, 3);
+    if (item_count == 0) {
+        luaL_error(L, "Combo items table is empty");
+        return 0;
+    }
+
+    // Allocate array for C strings
+    const char** items = (const char**)malloc(item_count * sizeof(const char*));
+    if (!items) {
+        luaL_error(L, "Failed to allocate memory for Combo items");
+        return 0;
+    }
+
+    // Populate items array
+    for (int i = 0; i < item_count; i++) {
+        lua_geti(L, 3, i + 1); // Lua tables are 1-based
+        if (!lua_isstring(L, -1)) {
+            free(items);
+            luaL_error(L, "Item %d is not a string", i + 1);
+            return 0;
+        }
+        items[i] = lua_tostring(L, -1);
+        lua_pop(L, 1);
+    }
+
+    bool changed = igCombo_Str_arr(label, &current_item, items, item_count, item_count);
+    free(items);
+    lua_pushboolean(L, changed); // Whether selection changed
+    lua_pushinteger(L, current_item); // New selected index
+    return 2;
+}
+
+// List box
+static int lua_imgui_list_box(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    int current_item = luaL_checkinteger(L, 2); // Current selected item index (0-based)
+    luaL_checktype(L, 3, LUA_TTABLE); // Items as a Lua table
+    float height_in_items = luaL_optnumber(L, 4, -1.0f); // Optional height in items
+
+    // Get items from Lua table
+    int item_count = lua_rawlen(L, 3);
+    if (item_count == 0) {
+        luaL_error(L, "ListBox items table is empty");
+        return 0;
+    }
+
+    // Allocate array for C strings
+    const char** items = (const char**)malloc(item_count * sizeof(const char*));
+    if (!items) {
+        luaL_error(L, "Failed to allocate memory for ListBox items");
+        return 0;
+    }
+
+    // Populate items array
+    for (int i = 0; i < item_count; i++) {
+        lua_geti(L, 3, i + 1); // Lua tables are 1-based
+        if (!lua_isstring(L, -1)) {
+            free(items);
+            luaL_error(L, "Item %d is not a string", i + 1);
+            return 0;
+        }
+        items[i] = lua_tostring(L, -1);
+        lua_pop(L, 1);
+    }
+
+    bool changed = igListBox_Str_arr(label, &current_item, items, item_count, height_in_items);
+    free(items);
+    lua_pushboolean(L, changed); // Whether selection changed
+    lua_pushinteger(L, current_item); // New selected index
+    return 2;
+}
+
+// Plot lines
+static int lua_imgui_plot_lines(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    luaL_checktype(L, 2, LUA_TTABLE); // Values as a Lua table
+    const char* overlay_text = luaL_optstring(L, 3, NULL); // Optional overlay
+    float scale_min = luaL_optnumber(L, 4, FLT_MAX); // Optional scale min
+    float scale_max = luaL_optnumber(L, 5, FLT_MAX); // Optional scale max
+    float graph_width = luaL_optnumber(L, 6, 0.0f); // Optional width
+    float graph_height = luaL_optnumber(L, 7, 0.0f); // Optional height
+
+    // Get values from Lua table
+    int value_count = lua_rawlen(L, 2);
+    if (value_count == 0) {
+        luaL_error(L, "PlotLines values table is empty");
+        return 0;
+    }
+
+    // Allocate array for values
+    float* values = (float*)malloc(value_count * sizeof(float));
+    if (!values) {
+        luaL_error(L, "Failed to allocate memory for PlotLines values");
+        return 0;
+    }
+
+    // Populate values array
+    for (int i = 0; i < value_count; i++) {
+        lua_geti(L, 2, i + 1); // Lua tables are 1-based
+        if (!lua_isnumber(L, -1)) {
+            free(values);
+            luaL_error(L, "Value %d is not a number", i + 1);
+            return 0;
+        }
+        values[i] = (float)lua_tonumber(L, -1);
+        lua_pop(L, 1);
+    }
+
+    igPlotLines_FloatPtr(label, values, value_count, 0, overlay_text, scale_min, scale_max, (ImVec2){graph_width, graph_height}, sizeof(float));
+    free(values);
+    return 0;
+}
+
+
+// Plot histogram
+static int lua_imgui_plot_histogram(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    luaL_checktype(L, 2, LUA_TTABLE); // Values as a Lua table
+    const char* overlay_text = luaL_optstring(L, 3, NULL); // Optional overlay
+    float scale_min = luaL_optnumber(L, 4, FLT_MAX); // Optional scale min
+    float scale_max = luaL_optnumber(L, 5, FLT_MAX); // Optional scale max
+    float graph_width = luaL_optnumber(L, 6, 0.0f); // Optional width
+    float graph_height = luaL_optnumber(L, 7, 0.0f); // Optional height
+
+    // Get values from Lua table
+    int value_count = lua_rawlen(L, 2);
+    if (value_count == 0) {
+        luaL_error(L, "PlotHistogram values table is empty");
+        return 0;
+    }
+
+    // Allocate array for values
+    float* values = (float*)malloc(value_count * sizeof(float));
+    if (!values) {
+        luaL_error(L, "Failed to allocate memory for PlotHistogram values");
+        return 0;
+    }
+
+    // Populate values array
+    for (int i = 0; i < value_count; i++) {
+        lua_geti(L, 2, i + 1); // Lua tables are 1-based
+        if (!lua_isnumber(L, -1)) {
+            free(values);
+            luaL_error(L, "Value %d is not a number", i + 1);
+            return 0;
+        }
+        values[i] = (float)lua_tonumber(L, -1);
+        lua_pop(L, 1);
+    }
+
+    igPlotHistogram_FloatPtr(label, values, value_count, 0, overlay_text, scale_min, scale_max, (ImVec2){graph_width, graph_height}, sizeof(float));
+    free(values);
+    return 0;
+}
+
+
+
+// Vertical slider
+static int lua_imgui_v_slider_float(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    float v = (float)luaL_checknumber(L, 2); // Current value
+    float v_min = (float)luaL_checknumber(L, 3); // Min value
+    float v_max = (float)luaL_checknumber(L, 4); // Max value
+    float size_x = luaL_optnumber(L, 5, 18.0f); // Optional size x
+    float size_y = luaL_optnumber(L, 6, 160.0f); // Optional size y
+    const char* format = luaL_optstring(L, 7, "%.3f"); // Optional format
+    int flags = luaL_optinteger(L, 8, 0); // Optional flags
+
+    bool changed = igVSliderFloat(label, (ImVec2){size_x, size_y}, &v, v_min, v_max, format, flags);
+    lua_pushboolean(L, changed); // Whether value changed
+    lua_pushnumber(L, v); // New value
+    return 2;
+}
+
+
+
+
 
 // Lua module registration
 static const luaL_Reg imgui_functions[] = {
@@ -1398,6 +1689,23 @@ static const luaL_Reg imgui_functions[] = {
     {"TableNextColumn", lua_imgui_table_next_column},
     {"TableSetColumnIndex", lua_imgui_table_set_column_index},
     {"InputText", lua_imgui_input_text},
+
+    {"InputTextMultiline", lua_imgui_input_text_multiline},
+    {"RadioButton", lua_imgui_radio_button},
+    {"ProgressBar", lua_imgui_progress_bar},
+    {"TreeNode", lua_imgui_tree_node},
+    {"TreePop", lua_imgui_tree_pop},
+    {"Bullet", lua_imgui_bullet},
+    {"TextColored", lua_imgui_text_colored},
+
+
+    {"Combo", lua_imgui_combo},
+    {"ListBox", lua_imgui_list_box},
+    {"PlotLines", lua_imgui_plot_lines},
+    {"PlotHistogram", lua_imgui_plot_histogram},
+    {"VSliderFloat", lua_imgui_v_slider_float},
+
+
     {NULL, NULL}
 };
 

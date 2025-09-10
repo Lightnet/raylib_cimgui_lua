@@ -79,7 +79,35 @@ end
 - [x] ColorPicker3
 - [x] ColorPicker4
 - [x] ColorButton
-- [ ] 
+- [x] BeginTabBar
+- [x] EndTabBar
+- [x] BeginTabItem
+- [x] EndTabItem
+- [x] IsItemHovered
+- [x] IsItemActive
+- [x] IsItemClicked
+- [x] SameLine
+- [x] Separator
+- [x] Spacing
+- [x] BeginTable
+- [x] EndTable
+- [x] TableNextRow
+- [x] TableNextColumn
+- [x] TableSetColumnIndex
+- [x] InputText
+- [x] InputTextMultiline
+- [x] RadioButton
+- [x] ProgressBar
+- [x] TreeNode
+- [x] TreePop
+- [x] Bullet
+- [x] TextColored
+- [x] Combo
+- [x] ListBox
+- [x] PlotLines
+- [x] PlotHistogram
+- [x] VSliderFloat
+
 ## Theme:
 - [x] imgui.GetStyleCustom(imgui.Col.Text)
 - [x] imgui.SetStyleCustom(imgui.Col.Text, {0.0, 0.0, 1.0, 1.0}) -- Set blue text
