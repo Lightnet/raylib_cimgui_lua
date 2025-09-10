@@ -1631,7 +1631,94 @@ static int lua_imgui_v_slider_float(lua_State* L) {
     return 2;
 }
 
+// Begin a child window
+static int lua_imgui_begin_child(lua_State* L) {
+    const char* str_id = luaL_checkstring(L, 1);
+    float size_x = luaL_optnumber(L, 2, 0.0f); // Optional size x
+    float size_y = luaL_optnumber(L, 3, 0.0f); // Optional size y
+    bool border = luaL_optinteger(L, 4, 0); // Optional border
+    int flags = luaL_optinteger(L, 5, 0); // Optional flags
+    bool result = igBeginChild_Str(str_id, (ImVec2){size_x, size_y}, border, flags);
+    lua_pushboolean(L, result); // Return whether the child window is visible
+    return 1;
+}
 
+// End a child window
+static int lua_imgui_end_child(lua_State* L) {
+    igEndChild();
+    return 0;
+}
+
+// Check if the window is appearing
+static int lua_imgui_is_window_appearing(lua_State* L) {
+    bool result = igIsWindowAppearing();
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Check if the window is collapsed
+static int lua_imgui_is_window_collapsed(lua_State* L) {
+    bool result = igIsWindowCollapsed();
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Check if the window is focused
+static int lua_imgui_is_window_focused(lua_State* L) {
+    int flags = luaL_optinteger(L, 1, 0); // Optional flags
+    bool result = igIsWindowFocused(flags);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Check if the window is hovered
+static int lua_imgui_is_window_hovered(lua_State* L) {
+    int flags = luaL_optinteger(L, 1, 0); // Optional flags
+    bool result = igIsWindowHovered(flags);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Get the window position
+static int lua_imgui_get_window_pos(lua_State* L) {
+    ImVec2 pos;
+    igGetWindowPos(&pos);
+    lua_pushnumber(L, pos.x);
+    lua_pushnumber(L, pos.y);
+    return 2;
+}
+
+// Get the window size
+static int lua_imgui_get_window_size(lua_State* L) {
+    ImVec2 size;
+    igGetWindowSize(&size);
+    lua_pushnumber(L, size.x);
+    lua_pushnumber(L, size.y);
+    return 2;
+}
+
+// Get the window width
+static int lua_imgui_get_window_width(lua_State* L) {
+    float width = igGetWindowWidth();
+    lua_pushnumber(L, width);
+    return 1;
+}
+
+// Get the window height
+static int lua_imgui_get_window_height(lua_State* L) {
+    float height = igGetWindowHeight();
+    lua_pushnumber(L, height);
+    return 1;
+}
+
+// Collapsing header
+static int lua_imgui_collapsing_header(lua_State* L) {
+    const char* label = luaL_checkstring(L, 1);
+    int flags = luaL_optinteger(L, 2, 0); // Optional flags
+    bool result = igCollapsingHeader_TreeNodeFlags(label, flags);
+    lua_pushboolean(L, result); // Return whether the header is open
+    return 1;
+}
 
 
 
@@ -1704,6 +1791,18 @@ static const luaL_Reg imgui_functions[] = {
     {"PlotLines", lua_imgui_plot_lines},
     {"PlotHistogram", lua_imgui_plot_histogram},
     {"VSliderFloat", lua_imgui_v_slider_float},
+
+    {"BeginChild", lua_imgui_begin_child},
+    {"EndChild", lua_imgui_end_child},
+    {"IsWindowAppearing", lua_imgui_is_window_appearing},
+    {"IsWindowCollapsed", lua_imgui_is_window_collapsed},
+    {"IsWindowFocused", lua_imgui_is_window_focused},
+    {"IsWindowHovered", lua_imgui_is_window_hovered},
+    {"GetWindowPos", lua_imgui_get_window_pos},
+    {"GetWindowSize", lua_imgui_get_window_size},
+    {"GetWindowWidth", lua_imgui_get_window_width},
+    {"GetWindowHeight", lua_imgui_get_window_height},
+    {"CollapsingHeader", lua_imgui_collapsing_header},
 
 
     {NULL, NULL}

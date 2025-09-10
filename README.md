@@ -14,7 +14,7 @@
 - glfw ( raylib )
 - CMake
 
-# tools:
+# Tools:
 - msys64
 - CMake
 
@@ -25,6 +25,8 @@
 imgui.end()
 ```
   This does not work due to match end for if statement conflict due how lua api table work. To follow imgui format for easy to read and port to c/c++ to be use later.
+
+  Some change to keep it simple since c does not work on lua script. It will handle in c lua state side code.
 
 # Information:
   This is sample project that use cimgui (c language programing) convert from imgui (c++ language programing ) to run with raylib but in abstraction low level by rlgl.h. Due to raylib.h can't be access to set up window and graphic.
@@ -107,6 +109,17 @@ end
 - [x] PlotLines
 - [x] PlotHistogram
 - [x] VSliderFloat
+- [x] BeginChild
+- [x] EndChild
+- [x] IsWindowAppearing
+- [x] IsWindowCollapsed
+- [x] IsWindowFocused
+- [x] IsWindowHovered
+- [x] GetWindowPos
+- [x] GetWindowSize
+- [x] GetWindowWidth
+- [x] GetWindowHeight
+- [x] CollapsingHeader
 
 ## Theme:
 - [x] imgui.GetStyleCustom(imgui.Col.Text)
