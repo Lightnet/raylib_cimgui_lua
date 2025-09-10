@@ -649,7 +649,6 @@ static int lua_imgui_color_picker4(lua_State* L) {
     return 2; // Return color table and changed flag
 }
 
-
 static int lua_imgui_color_button(lua_State* L) {
     const char* desc_id = luaL_checkstring(L, 1);
     
@@ -732,7 +731,6 @@ static int lua_imgui_color_button(lua_State* L) {
     return 1; // Return pressed flag
 }
 
-
 // Lua-C function to set tooltip
 static int lua_imgui_set_tooltip(lua_State* L) {
     const char* fmt = luaL_checkstring(L, 1);
@@ -778,7 +776,6 @@ static int lua_imgui_set_tooltip(lua_State* L) {
     igSetTooltip("%s", formatted);
     return 0;
 }
-
 
 // Lua-C function to set custom ImGui style colors
 static int lua_imgui_set_style_custom(lua_State* L) {
@@ -1100,7 +1097,6 @@ static int lua_imgui_set_style_customs(lua_State* L) {
 
     return 0; // No return value
 }
-
 
 // Lua-C function to get a custom ImGui style color
 static int lua_imgui_get_style_custom(lua_State* L) {
@@ -1570,7 +1566,6 @@ static int lua_imgui_plot_lines(lua_State* L) {
     return 0;
 }
 
-
 // Plot histogram
 static int lua_imgui_plot_histogram(lua_State* L) {
     const char* label = luaL_checkstring(L, 1);
@@ -1611,8 +1606,6 @@ static int lua_imgui_plot_histogram(lua_State* L) {
     free(values);
     return 0;
 }
-
-
 
 // Vertical slider
 static int lua_imgui_v_slider_float(lua_State* L) {
@@ -1722,6 +1715,9 @@ static int lua_imgui_collapsing_header(lua_State* L) {
 
 
 
+
+
+
 // Lua module registration
 static const luaL_Reg imgui_functions[] = {
     // test
@@ -1808,7 +1804,7 @@ static const luaL_Reg imgui_functions[] = {
     {NULL, NULL}
 };
 
-
+// table, variable flags
 int luaopen_imgui(lua_State* L) {
     // Create imgui table
     luaL_newlib(L, imgui_functions);
@@ -1961,11 +1957,8 @@ int luaopen_imgui(lua_State* L) {
     }
     lua_setfield(L, -2, "Col");
 
-
-    
     return 1;
 }
-
 
 // Implementations for header-declared functions (stubs/no-ops since handled in main.c)
 void cimgui_init(void) {
@@ -1992,6 +1985,7 @@ void cimgui_render(void) {
     // No-op or add render-specific logic
 }
 
+// clean up
 void cimgui_cleanup(void) {
     if (g_lua_state) {
         lua_imgui_cleanup(g_lua_state);
@@ -2001,6 +1995,7 @@ void cimgui_cleanup(void) {
     printf("cimgui module cleaned up\n");
 }
 
+// cimgui call draw
 void cimgui_call_draw(void) {
     if (!g_lua_state) {
         printf("Error: No Lua state in cimgui_call_draw\n");

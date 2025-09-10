@@ -51,7 +51,7 @@ end
 ```
 
 # Note:
-- this is place holder code still need to make sure it coded and tested.
+- This is place holder code still need to make sure it coded and tested.
 
 # Features:
 - [ ] flags
