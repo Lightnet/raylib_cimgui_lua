@@ -1,19 +1,12 @@
 // module_raylib.c
 #include "module_raylib.h"
-#include "module_lua.h" // For lua_get_state
+#include "module_lua.h"
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
-// #define RLGL_IMPLEMENTATION
 #include "rlgl.h"
-// #define RAYMATH_STATIC_INLINE
 #include "raymath.h"
 #include <GLFW/glfw3.h>
-
-#include "drawcube.h"
-
-// Assuming DrawCube is defined in main.c
-// extern void DrawCube(Vector3 position);
 
 // Helper function to push a Vector3 to Lua
 static void push_vector3(lua_State *L, Vector3 v) {
@@ -143,10 +136,44 @@ static int lua_raylib_set_matrix_modelview(lua_State *L) {
     return 0;
 }
 
-// Lua binding for DrawCube
-static int lua_raylib_draw_cube(lua_State *L) {
-    Vector3 position = get_vector3(L, 1);
-    DrawCube(position);
+// Lua binding for rlBegin
+static int lua_raylib_begin(lua_State *L) {
+    int mode = luaL_checkinteger(L, 1);
+    rlBegin(mode);
+    return 0;
+}
+
+// Lua binding for rlEnd
+static int lua_raylib_end(lua_State *L) {
+    rlEnd();
+    return 0;
+}
+
+// Lua binding for rlVertex3f
+static int lua_raylib_vertex3f(lua_State *L) {
+    float x = luaL_checknumber(L, 1);
+    float y = luaL_checknumber(L, 2);
+    float z = luaL_checknumber(L, 3);
+    rlVertex3f(x, y, z);
+    return 0;
+}
+
+// Lua binding for rlColor4ub
+static int lua_raylib_color4ub(lua_State *L) {
+    unsigned char r = luaL_checkinteger(L, 1);
+    unsigned char g = luaL_checkinteger(L, 2);
+    unsigned char b = luaL_checkinteger(L, 3);
+    unsigned char a = luaL_checkinteger(L, 4);
+    rlColor4ub(r, g, b, a);
+    return 0;
+}
+
+// Lua binding for rlTranslatef
+static int lua_raylib_translatef(lua_State *L) {
+    float x = luaL_checknumber(L, 1);
+    float y = luaL_checknumber(L, 2);
+    float z = luaL_checknumber(L, 3);
+    rlTranslatef(x, y, z);
     return 0;
 }
 
@@ -166,25 +193,27 @@ static const struct luaL_Reg raylib_funcs[] = {
     {"MatrixMultiply", lua_raylib_matrix_multiply},
     {"rlSetMatrixProjection", lua_raylib_set_matrix_projection},
     {"rlSetMatrixModelview", lua_raylib_set_matrix_modelview},
-    {"DrawCube", lua_raylib_draw_cube},
+    {"rlBegin", lua_raylib_begin},
+    {"rlEnd", lua_raylib_end},
+    {"rlVertex3f", lua_raylib_vertex3f},
+    {"rlColor4ub", lua_raylib_color4ub},
+    {"rlTranslatef", lua_raylib_translatef},
     {"render", lua_raylib_render},
     {NULL, NULL}
 };
 
-// Initialize raylib module, mirroring cimgui_init
+// Initialize raylib module
 void raylib_init(void) {
-    // Fetch Lua state from module_lua
     lua_State *L = lua_get_state();
     if (!L) {
         printf("Error: No Lua state available in raylib_init\n");
         return;
     }
     
-    // Register the raylib module in Lua
     lua_newtable(L);
     luaL_setfuncs(L, raylib_funcs, 0);
-    lua_setglobal(L, "rl"); // Make rl table globally accessible
-    lua_settop(L, 0); // Clean stack
+    lua_setglobal(L, "rl");
+    lua_settop(L, 0);
     
     printf("raylib module initialized\n");
 }

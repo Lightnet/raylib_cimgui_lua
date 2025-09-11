@@ -126,6 +126,8 @@ set(SRC_FILES
     src/module_cimgui.c                             # cimgui
     src/module_lua.c                                # lua
     src/module_enet.c                               # enet
+    src/module_raylib.c                             # raylib
+    src/drawcube.c                             # raylib
 )
 
 add_executable(${APP_NAME}
