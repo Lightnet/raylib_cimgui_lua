@@ -8,12 +8,10 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
-
-
 #include "cimgui.h"
 #include "cimgui_impl.h"
 
-#define RLGL_IMPLEMENTATION
+// #define RLGL_IMPLEMENTATION
 #include "rlgl.h"
 #define RAYMATH_STATIC_INLINE
 #include "raymath.h"
@@ -23,6 +21,9 @@
 #include "module_lua.h"
 #include "module_cimgui.h"
 #include "module_enet.h"
+#include "module_raylib.h"
+
+#include "drawcube.h"
 
 #include <stdio.h>              // Required for: printf()
 #include <math.h>               // For fmodf
@@ -58,79 +59,79 @@ static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, i
 static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);  // For resize
 
 // Function to draw a simple colored cube (faces with different colors)
-static void DrawCube(Vector3 position) {
-    // Simple cube with size 1.0f, centered at position
-    float size = 1.0f;
+// static void DrawCube(Vector3 position) {
+//     // Simple cube with size 1.0f, centered at position
+//     float size = 1.0f;
 
-    // Vertices for the cube (24 for faces)
-    Vector3 cubeVertices[24];  // 4 vertices per face * 6 faces
-    // Front face
-    cubeVertices[0] = (Vector3){-size, -size, +size};
-    cubeVertices[1] = (Vector3){+size, -size, +size};
-    cubeVertices[2] = (Vector3){+size, +size, +size};
-    cubeVertices[3] = (Vector3){-size, +size, +size};
-    // Back face
-    cubeVertices[4] = (Vector3){-size, -size, -size};
-    cubeVertices[5] = (Vector3){-size, +size, -size};
-    cubeVertices[6] = (Vector3){+size, +size, -size};
-    cubeVertices[7] = (Vector3){+size, -size, -size};
-    // Top face
-    cubeVertices[8] = (Vector3){-size, +size, -size};
-    cubeVertices[9] = (Vector3){-size, +size, +size};
-    cubeVertices[10] = (Vector3){+size, +size, +size};
-    cubeVertices[11] = (Vector3){+size, +size, -size};
-    // Bottom face
-    cubeVertices[12] = (Vector3){-size, -size, -size};
-    cubeVertices[13] = (Vector3){+size, -size, -size};
-    cubeVertices[14] = (Vector3){+size, -size, +size};
-    cubeVertices[15] = (Vector3){-size, -size, +size};
-    // Right face
-    cubeVertices[16] = (Vector3){+size, -size, -size};
-    cubeVertices[17] = (Vector3){+size, +size, -size};
-    cubeVertices[18] = (Vector3){+size, +size, +size};
-    cubeVertices[19] = (Vector3){+size, -size, +size};
-    // Left face
-    cubeVertices[20] = (Vector3){-size, -size, -size};
-    cubeVertices[21] = (Vector3){-size, -size, +size};
-    cubeVertices[22] = (Vector3){-size, +size, +size};
-    cubeVertices[23] = (Vector3){-size, +size, -size};
+//     // Vertices for the cube (24 for faces)
+//     Vector3 cubeVertices[24];  // 4 vertices per face * 6 faces
+//     // Front face
+//     cubeVertices[0] = (Vector3){-size, -size, +size};
+//     cubeVertices[1] = (Vector3){+size, -size, +size};
+//     cubeVertices[2] = (Vector3){+size, +size, +size};
+//     cubeVertices[3] = (Vector3){-size, +size, +size};
+//     // Back face
+//     cubeVertices[4] = (Vector3){-size, -size, -size};
+//     cubeVertices[5] = (Vector3){-size, +size, -size};
+//     cubeVertices[6] = (Vector3){+size, +size, -size};
+//     cubeVertices[7] = (Vector3){+size, -size, -size};
+//     // Top face
+//     cubeVertices[8] = (Vector3){-size, +size, -size};
+//     cubeVertices[9] = (Vector3){-size, +size, +size};
+//     cubeVertices[10] = (Vector3){+size, +size, +size};
+//     cubeVertices[11] = (Vector3){+size, +size, -size};
+//     // Bottom face
+//     cubeVertices[12] = (Vector3){-size, -size, -size};
+//     cubeVertices[13] = (Vector3){+size, -size, -size};
+//     cubeVertices[14] = (Vector3){+size, -size, +size};
+//     cubeVertices[15] = (Vector3){-size, -size, +size};
+//     // Right face
+//     cubeVertices[16] = (Vector3){+size, -size, -size};
+//     cubeVertices[17] = (Vector3){+size, +size, -size};
+//     cubeVertices[18] = (Vector3){+size, +size, +size};
+//     cubeVertices[19] = (Vector3){+size, -size, +size};
+//     // Left face
+//     cubeVertices[20] = (Vector3){-size, -size, -size};
+//     cubeVertices[21] = (Vector3){-size, -size, +size};
+//     cubeVertices[22] = (Vector3){-size, +size, +size};
+//     cubeVertices[23] = (Vector3){-size, +size, -size};
 
-    // Indices for triangles (6 indices per face: two triangles)
-    int indices[36] = {
-        0,1,2, 2,3,0,   // Front
-        4,5,6, 6,7,4,   // Back
-        8,9,10, 10,11,8, // Top
-        12,13,14, 14,15,12, // Bottom
-        16,17,18, 18,19,16, // Right
-        20,21,22, 22,23,20  // Left
-    };
+//     // Indices for triangles (6 indices per face: two triangles)
+//     int indices[36] = {
+//         0,1,2, 2,3,0,   // Front
+//         4,5,6, 6,7,4,   // Back
+//         8,9,10, 10,11,8, // Top
+//         12,13,14, 14,15,12, // Bottom
+//         16,17,18, 18,19,16, // Right
+//         20,21,22, 22,23,20  // Left
+//     };
 
-    // Colors per face (RGBA)
-    Color colors[6] = {
-        {255,0,0,255},    // Front: Red
-        {0,255,0,255},    // Back: Green
-        {0,0,255,255},    // Top: Blue
-        {255,255,0,255},  // Bottom: Yellow
-        {255,0,255,255},  // Right: Magenta
-        {0,255,255,255}   // Left: Cyan
-    };
+//     // Colors per face (RGBA)
+//     Color colors[6] = {
+//         {255,0,0,255},    // Front: Red
+//         {0,255,0,255},    // Back: Green
+//         {0,0,255,255},    // Top: Blue
+//         {255,255,0,255},  // Bottom: Yellow
+//         {255,0,255,255},  // Right: Magenta
+//         {0,255,255,255}   // Left: Cyan
+//     };
 
-    // Translate to position before drawing (simple, no stack needed here)
-    rlTranslatef(position.x, position.y, position.z);
+//     // Translate to position before drawing (simple, no stack needed here)
+//     rlTranslatef(position.x, position.y, position.z);
 
-    rlBegin(RL_TRIANGLES);
-    for (int face = 0; face < 6; ++face) {
-        // Set color for this face (scalar calls)
-        rlColor4ub(colors[face].r, colors[face].g, colors[face].b, colors[face].a);
-        // Draw 6 vertices for the two triangles of this face
-        for (int i = 0; i < 6; ++i) {
-            int idx = face * 6 + i;
-            Vector3 v = cubeVertices[indices[idx]];
-            rlVertex3f(v.x, v.y, v.z);
-        }
-    }
-    rlEnd();
-}
+//     rlBegin(RL_TRIANGLES);
+//     for (int face = 0; face < 6; ++face) {
+//         // Set color for this face (scalar calls)
+//         rlColor4ub(colors[face].r, colors[face].g, colors[face].b, colors[face].a);
+//         // Draw 6 vertices for the two triangles of this face
+//         for (int i = 0; i < 6; ++i) {
+//             int idx = face * 6 + i;
+//             Vector3 v = cubeVertices[indices[idx]];
+//             rlVertex3f(v.x, v.y, v.z);
+//         }
+//     }
+//     rlEnd();
+// }
 
 // Forward declaration for file_exists (add this line before main())
 static int file_exists(const char* filename);
@@ -207,6 +208,7 @@ int main(int argc, char** argv) {
     // Initialize cimgui this goes here since we need imgui else error.
     cimgui_init(); // init lua cimgui module
     enet_init(); // init network lua module
+    raylib_init();
 
     // Load Lua and check script
     const char* lua_script = "script.lua";
@@ -268,22 +270,22 @@ int main(int argc, char** argv) {
         }
 
         // 3D Rendering (unchanged)
-        float aspect = (float)screenWidth / (float)screenHeight;
-        Matrix proj = MatrixPerspective(camera.fovy * DEG2RAD, aspect, 0.1f, 1000.0f);
-        rlSetMatrixProjection(proj);
+        // float aspect = (float)screenWidth / (float)screenHeight;
+        // Matrix proj = MatrixPerspective(camera.fovy * DEG2RAD, aspect, 0.1f, 1000.0f);
+        // rlSetMatrixProjection(proj);
 
-        Matrix view = MatrixLookAt(camera.position, camera.target, camera.up);
-        Matrix rot = MatrixRotateY(rotation * DEG2RAD);
-        Matrix trans = MatrixTranslate(cubePosition.x, cubePosition.y, cubePosition.z);
-        Matrix model = MatrixMultiply(rot, trans);
-        Matrix modelView = MatrixMultiply(model, view);
-        rlSetMatrixModelview(modelView);
+        // Matrix view = MatrixLookAt(camera.position, camera.target, camera.up);
+        // Matrix rot = MatrixRotateY(rotation * DEG2RAD);
+        // Matrix trans = MatrixTranslate(cubePosition.x, cubePosition.y, cubePosition.z);
+        // Matrix model = MatrixMultiply(rot, trans);
+        // Matrix modelView = MatrixMultiply(model, view);
+        // rlSetMatrixModelview(modelView);
 
-        DrawCube((Vector3){0.0f, 0.0f, 0.0f});
+        // DrawCube((Vector3){0.0f, 0.0f, 0.0f});
         rlDrawRenderBatchActive();
 
         // Reset state for ImGui ???
-        glUseProgram(0);
+        // glUseProgram(0);
         ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
         glfwSwapBuffers(window);
     }
