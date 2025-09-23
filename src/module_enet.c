@@ -330,26 +330,10 @@ void enet_update(void) {
     lua_settop(g_lua_state, 0);
 }
 
-void enet_cleanup(void) {
-    // Call enet.deinitialize
-    if (g_lua_state) {
-        lua_getglobal(g_lua_state, "enet");
-        if (lua_istable(g_lua_state, -1)) {
-            lua_getfield(g_lua_state, -1, "deinitialize");
-            if (lua_isfunction(g_lua_state, -1)) {
-                if (lua_pcall(g_lua_state, 0, 0, 0) != LUA_OK) {
-                    const char* error = lua_tostring(g_lua_state, -1);
-                    printf("Error in enet.deinitialize: %s\n", error);
-                    lua_pop(g_lua_state, 1);
-                }
-            } else {
-                lua_pop(g_lua_state, 1);
-                enet_deinitialize(); // Fallback
-            }
-        }
-        lua_pop(g_lua_state, 1);
-    }
 
+void enet_cleanup(void) {
+    enet_deinitialize();
     g_lua_state = NULL;
     printf("ENet module cleaned up\n");
 }
+

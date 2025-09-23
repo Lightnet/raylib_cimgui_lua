@@ -1987,11 +1987,12 @@ void cimgui_render(void) {
 
 // clean up
 void cimgui_cleanup(void) {
-    if (g_lua_state) {
-        lua_imgui_cleanup(g_lua_state);
+    if (g_imgui_context) {
+        igDestroyContext(g_imgui_context);
+        g_imgui_context = NULL;
+        g_lua_initialized = false;
     }
-    g_lua_state = NULL; // Clear local state
-    g_lua_initialized = false;
+    g_lua_state = NULL;
     printf("cimgui module cleaned up\n");
 }
 

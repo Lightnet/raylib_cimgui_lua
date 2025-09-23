@@ -15,6 +15,7 @@
 #include "rlgl.h"
 #define RAYMATH_STATIC_INLINE
 #include "raymath.h"
+#include "raylib.h" // For DrawCube in default UI
 
 #include <GLFW/glfw3.h>
 
@@ -23,33 +24,33 @@
 #include "module_enet.h"
 #include "module_raylib.h"
 
-#include "drawcube.h"
+// #include "drawcube.h"
 
 #include <stdio.h>              // Required for: printf()
 #include <math.h>               // For fmodf
 
 #define igGetIO igGetIO_Nil
 
-#define RED        (Color){ 230, 41, 55, 255 }     // Red
-#define RAYWHITE   (Color){ 245, 245, 245, 255 }   // My own White (raylib logo)
-#define DARKGRAY   (Color){ 80, 80, 80, 255 }      // Dark Gray
+// #define RED        (Color){ 230, 41, 55, 255 }     // Red
+// #define RAYWHITE   (Color){ 245, 245, 245, 255 }   // My own White (raylib logo)
+// #define DARKGRAY   (Color){ 80, 80, 80, 255 }      // Dark Gray
 
-// Color, 4 components, R8G8B8A8 (32bit)
-typedef struct Color {
-    unsigned char r;        // Color red value
-    unsigned char g;        // Color green value
-    unsigned char b;        // Color blue value
-    unsigned char a;        // Color alpha value
-} Color;
+// // Color, 4 components, R8G8B8A8 (32bit)
+// typedef struct Color {
+//     unsigned char r;        // Color red value
+//     unsigned char g;        // Color green value
+//     unsigned char b;        // Color blue value
+//     unsigned char a;        // Color alpha value
+// } Color;
 
-// Camera type, defines a camera position/orientation in 3d space
-typedef struct Camera {
-    Vector3 position;       // Camera position
-    Vector3 target;         // Camera target it looks-at
-    Vector3 up;             // Camera up vector (rotation over its axis)
-    float fovy;             // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
-    int projection;         // Camera projection: CAMERA_PERSPECTIVE or CAMERA_ORTHOGRAPHIC
-} Camera;
+// // Camera type, defines a camera position/orientation in 3d space
+// typedef struct Camera {
+//     Vector3 position;       // Camera position
+//     Vector3 target;         // Camera target it looks-at
+//     Vector3 up;             // Camera up vector (rotation over its axis)
+//     float fovy;             // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
+//     int projection;         // Camera projection: CAMERA_PERSPECTIVE or CAMERA_ORTHOGRAPHIC
+// } Camera;
 
 //----------------------------------------------------------------------------------
 // Module Functions Declaration
@@ -232,7 +233,8 @@ int main(int argc, char** argv) {
         
         // Auto-rotate cube
         if (!use_lua || igIsItemActive() == false) {
-            rotation = fmodf(time * 30.0f, 360.0f);
+            // rotation = fmodf(time * 30.0f, 360.0f);
+            rotation = fmodf(time * 90.0f, 360.0f);
         }
 
         glfwPollEvents();
@@ -270,18 +272,24 @@ int main(int argc, char** argv) {
         }
 
         // 3D Rendering (unchanged)
-        // float aspect = (float)screenWidth / (float)screenHeight;
-        // Matrix proj = MatrixPerspective(camera.fovy * DEG2RAD, aspect, 0.1f, 1000.0f);
-        // rlSetMatrixProjection(proj);
+        float aspect = (float)screenWidth / (float)screenHeight;
+        Matrix proj = MatrixPerspective(camera.fovy * DEG2RAD, aspect, 0.1f, 1000.0f);
+        rlSetMatrixProjection(proj);
 
-        // Matrix view = MatrixLookAt(camera.position, camera.target, camera.up);
-        // Matrix rot = MatrixRotateY(rotation * DEG2RAD);
-        // Matrix trans = MatrixTranslate(cubePosition.x, cubePosition.y, cubePosition.z);
-        // Matrix model = MatrixMultiply(rot, trans);
-        // Matrix modelView = MatrixMultiply(model, view);
-        // rlSetMatrixModelview(modelView);
+        Matrix view = MatrixLookAt(camera.position, camera.target, camera.up);
+        Matrix rot = MatrixRotateY(rotation * DEG2RAD);
+        Matrix trans = MatrixTranslate(cubePosition.x, cubePosition.y, cubePosition.z);
+        Matrix model = MatrixMultiply(rot, trans);
+        Matrix modelView = MatrixMultiply(model, view);
+        rlSetMatrixModelview(modelView);
 
+        // custom build
         // DrawCube((Vector3){0.0f, 0.0f, 0.0f});
+
+        // raylib works
+        DrawCube(cubePosition, 0.1f, 0.1f, 0.5f, RED); // Use raylib's DrawCube for default UI
+
+
         rlDrawRenderBatchActive();
 
         // Reset state for ImGui ???
@@ -298,16 +306,35 @@ int main(int argc, char** argv) {
             if (lua_isfunction(L, -1)) {
                 lua_pcall(L, 0, 0, 0);
             }
-            lua_cleanup();
+            // Pop any remaining stack items if needed
+            lua_settop(L, 0);
         }
     }
-    enet_cleanup();
-    cimgui_cleanup();
-    lua_cleanup();
-    
+    enet_cleanup();      // Call before Lua close
+    cimgui_cleanup();    // Call before Lua close
+    lua_cleanup();       // Now safe to close Lua state
     rlglClose();
     glfwDestroyWindow(window);
     glfwTerminate();
+
+
+    // if (use_lua) {
+    //     lua_State* L = lua_get_state();
+    //     if (L) {
+    //         lua_getglobal(L, "cleanup");
+    //         if (lua_isfunction(L, -1)) {
+    //             lua_pcall(L, 0, 0, 0);
+    //         }
+    //         lua_cleanup();
+    //     }
+    // }
+    // enet_cleanup();
+    // cimgui_cleanup();
+    // lua_cleanup();
+    
+    // rlglClose();
+    // glfwDestroyWindow(window);
+    // glfwTerminate();
     return 0;
 }
 

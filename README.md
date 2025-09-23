@@ -6,6 +6,15 @@
 - work in progress.
 - prototype code.
 
+# Language: c
+
+# Information:
+  This is sample project that use cimgui (c language programing) convert from imgui (c++ language programing ) to run with raylib but in abstraction low level by rlgl.h. Due to raylib.h can't be access to set up window and graphic.
+
+  By using the CMake for easy compile and fetch content to get those repo download to build the application. Reason is that there raylib have different type build compiler.
+
+  Currently using the simple lua script to run imgui widgets.
+
 # Packages:
 - raylib 5.5
 - cimgui 1.92.1 ( imgui )
@@ -15,7 +24,7 @@
 - CMake
 
 # Tools:
-- msys64
+- msys64 (toolchain compiler)
 - CMake
 
   Current config for windows with msys64 for small compiler. For later use for cross platform OS for desktop tests.
@@ -27,13 +36,6 @@ imgui.end()
   This does not work due to match end for if statement conflict due how lua api table work. To follow imgui format for easy to read and port to c/c++ to be use later.
 
   Some change to keep it simple since c does not work on lua script. It will handle in c lua state side code.
-
-# Information:
-  This is sample project that use cimgui (c language programing) convert from imgui (c++ language programing ) to run with raylib but in abstraction low level by rlgl.h. Due to raylib.h can't be access to set up window and graphic.
-
-  By using the CMake for easy compile and fetch content to get those repo download to build the application. Reason is that there raylib have different type build compiler.
-
-  Currently using the simple lua script to run imgui widgets.
 
 ```lua
 -- set up local or theme
